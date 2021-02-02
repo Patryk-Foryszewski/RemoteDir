@@ -1,0 +1,11 @@
+<CheckBox>
+    size_hint: None, None
+    size: 26, 26
+
+    canvas.before:
+        Color:
+            rgba: app.active_bcolor if self.state == 'down' else app.unactive_bcolor
+        Rectangle:
+            source: 'img/chbx_nor.jpg'
+            size: sp(20), sp(20)
+            pos: int(self.center_x - sp(10)), int(self.center_y - sp(10))

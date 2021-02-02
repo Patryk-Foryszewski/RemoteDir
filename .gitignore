@@ -1,0 +1,9 @@
+.idea
+sandbox.py
+__pycache__
+credentialspopup.kv
+certificate.crt
+privatekey.key
+SSH
+venv_python37
+config

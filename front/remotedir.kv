@@ -1,0 +1,154 @@
+
+<RemoteDir>
+    orientation: 'vertical'
+    bcolor: app.active_window_color
+    canvas.before:
+        Color:
+            rgba: self.bcolor
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    RelativeLayout:
+
+        size_hint_y: None
+        height: 50
+
+        BoxLayout:
+            pos_hint: {'center_y': .5}
+            size_hint_y: None
+            height: 26
+            spacing: 1
+
+            Image:
+                source: 'img/go_back.png'
+                on_touch_up:
+                    if self.collide_point(*args[1].pos) :\
+                    root.go_back()
+            Image:
+                source: 'img/go_forward.png'
+                on_touch_up:
+                    if self.collide_point(*args[1].pos) :\
+                    root.go_forward()
+
+            TextInput:
+                id: current_path
+                size_hint_x: 1
+                text: root.current_path
+                multiline: False
+                on_text_validate: root.chdir(self.text)
+
+            TextInput:
+                id: search
+                width: 140
+                multiline: False
+                hint_text: 'Search:'
+
+            Image:
+                id: settings
+                source: 'img/settings.png'
+                on_touch_up:
+                    if self.collide_point(*args[1].pos) :\
+                    root.settings()
+
+    BoxLayout:
+        size_hint_y: None
+        height: 26
+        BoxLayout
+        BoxLayout:
+            #pos_hint: {'right': 1}
+            size_hint_x: None
+            width: 100
+            spacing: 1
+
+            Image:
+                id: view_menu
+                source: 'img/arrow_down.png'
+                on_touch_up:
+                    if self.collide_point(*args[1].pos) :\
+                    root.view_menu()
+
+
+            Image:
+                id: sort_menu
+                source: 'img/arrow_down.png'
+                on_touch_up:
+                    if self.collide_point(*args[1].pos) :\
+                    root.sort_menu()
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: None, None
+                size: 12, 26
+                spacing: 2
+                Image:
+                    id: sort_files_up
+                    size: 12, 12
+                    source: 'img/arrow_up.png'
+                    on_touch_up:
+                        if self.collide_point(*args[1].pos) :\
+                        root.sort_files(reverse=False)
+                Image:
+                    id: sort_files_down
+                    size: 12, 12
+                    source: 'img/arrow_down.png'
+                    on_touch_up:
+                        if self.collide_point(*args[1].pos) :\
+                        root.sort_files(reverse=True)
+
+            Image:
+                id: file_size
+                source: 'img/arrow_down.png'
+                on_touch_up:
+                    if self.collide_point(*args[1].pos) :\
+                    root.file_size()
+
+
+    RelativeLayout:
+
+        ScrollView:
+            id: space_scroller
+            size_hint: (1, 1)
+            bar_width: 10
+            bar_color: app.bar_color
+            bar_inactive_color: self.bar_color
+            effect_cls: "ScrollEffect"
+            scroll_type: ['bars']
+            canvas.before:
+                Color:
+                    rgba: app.unactive_window_color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            FilesSpace:
+                id: files_space
+                originator: root
+                pos_hint: {'top': (root.height)/root.height, 'left': 0}
+                size_hint_x: 1 - space_scroller.bar_width/space_scroller.width if self.height > space_scroller.height else 1
+                size_hint_y:None
+                height: max(self.minimum_height, space_scroller.height)
+
+
+    RelativeLayout:
+        size_hint_y: progress_box.height/root.height
+        canvas.before:
+            Color:
+                rgba: app.main_bcolor
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        ProgressBox:
+            originator: root
+            pos_hint: {'center_x': .5}
+            id: progress_box
+            size_hint: .7, None
+            canvas.before:
+                Color:
+                    rgba: root.bcolor
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+
+

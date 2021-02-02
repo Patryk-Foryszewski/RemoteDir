@@ -1,0 +1,19 @@
+<Image>
+    size_hint: None, None
+    size: 26, 26
+    focus: False
+    active_color: app.active_bcolor
+    unactive_color: app.unactive_bcolor
+    focused_color: app.touched_color
+    background_color: self.unactive_color  if not self.focus else self.focused_color
+    canvas.before:
+        Color:
+            rgba: (0,0,0,0) if self.background_color is None else self.background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    on_touch_down:
+        if self.collide_point(*args[1].pos) :\
+        self.focus = True
+        else:\
+        self.focus = False

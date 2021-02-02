@@ -1,0 +1,29 @@
+<InfoPopup>
+    size_hint: None, .8
+    width: 600
+    auto_dismiss: True
+    separator_color: (1, 0, 0, 1)
+    ScrollView:
+        id: scroller
+        size_hint: (1, 1)
+        bar_width: 10
+        bar_color: app.bar_color
+        bar_inactive_color: app.active_window_color
+        effect_cls: "ScrollEffect"
+        scroll_type: ['bars', 'content']
+
+        TextInput:
+            id: info_output
+            size_hint: 1, None
+            height: max(self.minimum_height, scroller.height)
+            disabled_foreground_color: app.active_window_color
+            #disabled: True
+            background_normal: ''
+            background_active: ''
+            background_disabled_normal: ''
+            background_color: app.active_window_color
+            write_tab: False
+            font_size: 14
+            halign: "right"
+            valign: "middle"
+            markup: True

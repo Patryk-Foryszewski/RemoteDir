@@ -1,0 +1,43 @@
+<FileTile>
+    orientation: 'vertical'
+    size_hint: None, None
+    size: 100, 130
+    background_color: self.unactive_color if not self.focus else self.focused_color
+    focus: False
+    active_color: app.fbx_active_bcolor
+    unactive_color: app.main_bcolor
+    focused_color: app.touched_color
+    drag_rectangle: self.x, self.y, self.width, self.height
+    drag_timeout: 10000000
+    drag_distance: 0
+    height: pic.height + filename.height
+
+    canvas.before:
+        Color:
+            rgba: (0, 0, 1, 1)  if self.background_color is None else self.background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    RelativeLayout:
+        id: pic
+        size_hint: None, None
+        size: root.width, root.width
+        AsyncImage:
+            size_hint: .9, .9
+            pos_hint: {'center_x': .5, 'center_y': .5}
+            source: root.image
+            canvas.before:
+                Color:
+                    rgba: (0, 1, 0, 1) if root.background_color is None else root.background_color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+    AdjustableTextInput:
+        id: filename
+        max_lines: 3
+        my_text: root.filename
+        text_change: root.rename_file
+        background_color: (1, 0, 0, 1) if root.background_color is None else root.background_color
+        disabled: True
+

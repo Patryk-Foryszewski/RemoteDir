@@ -1,0 +1,107 @@
+<ProgressBox>
+    orientation: 'vertical'
+    size_hint: None, None
+    height: short_info.height  + actions.height  + scroll.height
+    padding: 2,2,2,2
+
+    ScrollView:
+        id: scroll
+        size_hint: (1, None)
+        height: 0
+        bar_width: 10
+        bar_color: app.bar_color
+        bar_inactive_color: self.bar_color
+        effect_cls: "ScrollEffect"
+        scroll_type: ['bars', 'content']
+        canvas.before:
+            Color:
+                rgba: app.unactive_window_color
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        StackLayout:
+            id: bars_space
+            spacing: 1
+            originator: root
+            pos_hint: {'top': 1}
+            size_hint_x: 1 - scroll.bar_width/scroll.width if self.height > scroll.height else 1
+            size_hint_y:None
+            height: max(self.minimum_height, scroll.height)
+
+
+    BoxLayout:
+        id: actions
+        spacing: 2
+        size_hint_y: None
+        height: 0
+        BoxLayout:
+        Label:
+            text: 'Clear'
+            size_hint_x: None
+            size: 100, actions.height
+            font_size: 0 if actions.height == 0 else 14
+            on_touch_down:
+                if self.collide_point(*args[1].pos) :\
+                root.clear()
+
+        Label:
+            text: 'Overwrite all'
+            size_hint_x: None
+            size: 100, actions.height
+            font_size: 0 if actions.height == 0 else 14
+            on_touch_down:
+                if self.collide_point(*args[1].pos) :\
+                root.overwrite_all()
+
+        Label:
+            text: 'Skip all'
+            size_hint_x: None
+            size: 100, actions.height
+            font_size: 0 if actions.height == 0 else 14
+            on_touch_down:
+                if self.collide_point(*args[1].pos) :\
+                root.skip_all()
+
+
+
+
+
+    BoxLayout:
+        id: short_info
+        text: 'Transfering files'
+        size_hint_y: None
+        height: 26
+        Label:
+            text: short_info.text
+            size_hint_x: None
+            width: 300
+            text_size: self.size
+
+
+        BoxLayout:
+        Label:
+            text: 'Details'
+            size_hint_x: None
+            width: 100
+            text_size: self.size
+
+        Label:
+            text: 'Stop transfers'
+            size_hint_x: None
+            width: 100
+            text_size: self.size
+            on_touch_down:
+                if self.collide_point(*args[1].pos) :\
+                root.stop()
+
+
+        Image:
+            id: show_bars
+            size: 22, 22
+            source: 'img/arrow_up.png'
+            on_touch_down:
+                hide = True if scroll.height > 0 else False
+                if self.collide_point(*args[1].pos):\
+                root.show_bars(hide);\
+

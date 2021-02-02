@@ -1,0 +1,93 @@
+<FileDetails>
+    size_hint: 1, None
+    height: 34
+    background_color: self.unactive_color if not self.focus else self.focused_color
+    focus: False
+    active_color: app.fbx_active_bcolor
+    unactive_color: app.main_bcolor
+    focused_color: app.touched_color
+    padding: 2,2,2,2
+    canvas.before:
+        Color:
+            rgba: (0, 0, 1, 1)  if self.background_color is None else self.background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    RelativeLayout:
+        size_hint: None, None
+        size: root.height, root.height
+        AsyncImage:
+            size_hint: .9, .9
+            pos_hint: {'center_x': .5, 'center_y': .5}
+            source: root.image
+            canvas.before:
+                Color:
+                    rgba: (0,0,0,1) if root.background_color is None else root.background_color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+    TextInput:
+        id: filename
+        size_hint_x: 1
+        background_normal: ''
+        background_color: (1, 0, 0, 1) if root.background_color is None else root.background_color
+        text: root.filename
+        font: .6*root.height
+        shorten: True
+        markup: True
+        justify: True
+        disabled: True
+        background_disabled_normal: ''
+        ellipsis_options: {'color':(0,0,0,1),'underline':True}
+        multiline: False
+        write_tab: False
+        on_focus:
+            if not self.focus: root.rename_file()
+
+    GridLayout:
+        cols: 2
+        rows: 2
+        size_hint_x: None
+        width: 300
+        spacing: 2
+
+        Label:
+            text: 'Date added:'
+            text_size: self.size
+            height: root.height/2 - 2
+            width: 100
+            font: 9
+        Label:
+            text: root.date_added
+            text_size: self.size
+            height: root.height/2 - 2
+            font: 9
+
+        Label:
+            text: 'Date modified:'
+            text_size: self.size
+            height: root.height/2 - 2
+            width: 100
+            font: 9
+
+        Label:
+            text: root.date_modified
+            text_size: self.size
+            height: root.height/2 - 2
+            font: 9
+
+    Label:
+        id: type
+        text: root.description
+        size_hint_x: None
+        width: 150
+        text_size: self.size
+
+    Label:
+        id: size
+        text: root.filesize
+        size_hint_x: None
+        width: 50
+        text_size: self.size

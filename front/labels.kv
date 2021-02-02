@@ -1,0 +1,13 @@
+<Label>
+    background_normal: ''
+    size_hint_y: None
+    height: 20
+    halign: 'left'
+    color: app.font_color
+
+<ErrLabel@Label>
+    height: 16
+    halign: 'left'
+    height: 0 if self.text == '' else 14
+    font_size: 10
+    color: (1, 0, 0, 1)

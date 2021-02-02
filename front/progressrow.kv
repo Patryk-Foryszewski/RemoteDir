@@ -1,0 +1,74 @@
+<ProgressRow>
+    orientation: 'vertical'
+    focus: False
+    size_hint_y: None
+    height: 36 + actions.height
+
+    background:
+    progress_color:
+    canvas.before:
+        Color:
+            rgba: app.active_window_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    Label:
+        id: desc
+        color: app.font_color
+        size_hint_y: .5
+        height: .35*root.height
+        text_size: self.size
+        font_size: 0.6*self.height
+        multiline: False
+
+    BoxLayout:
+        id: bar
+        size_hint_y: .3
+        Label:
+            id: percent
+            color: app.font_color
+            size_hint: None, 1
+            width: 2*bar.height
+            font_size: 0.8*self.height
+            multiline: False
+
+        BoxLayout:
+            size_hint_x: None
+            width: 0
+            id: progress
+            canvas.before:
+                Color:
+                    rgba: (0,1,0,1)#app.progress_color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+        BoxLayout:
+            id: rest
+
+    BoxLayout:
+        size_hint_y:None
+        height: 0
+        id: actions
+        BoxLayout:
+        Label:
+            width: 100
+            height: actions.height
+            text: 'Overwrite'
+            size_hint_x: None
+            font_size: 0 if actions.height == 0 else 14
+            on_touch_down:
+                if self.collide_point(*args[1].pos) :\
+                root.overwrite()
+
+
+        Label:
+            width: 100
+            height: actions.height
+            text: 'Skip'
+            size_hint_x: None
+            font_size: 0 if actions.height == 0 else 14
+            on_touch_down:
+                if self.collide_point(*args[1].pos) :\
+                root.skip()

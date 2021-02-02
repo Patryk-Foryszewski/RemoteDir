@@ -1,0 +1,25 @@
+<MenuPopupBtn>
+    size_hint: None, None
+    background_color: app.unactive_bcolor
+    height:20
+    color: 0,0,0,1
+
+<MenuPopup>
+    background_color: 0,0,0,0
+    ScrollView:
+        id: scroll
+        bar_width: 3
+        bar_color: app.bar_color
+        bar_inactive_color: app.bar_color
+        effect_cls: "ScrollEffect"
+        scroll_type: ['bars']
+
+        BoxLayout:
+            id: buttons_space
+            orientation: 'vertical'
+            canvas.before:
+                Color:
+                    rgba: app.unactive_bcolor
+                Rectangle:
+                    pos: self.pos
+                    size: self.size

@@ -1,0 +1,96 @@
+from kivy.uix.boxlayout import BoxLayout
+from kivy.clock import Clock
+from kivy.properties import BooleanProperty, ObjectProperty
+from kivy.core.window import Window
+import queue
+from progressrow import ProgressRow
+
+
+class ProgressBox(BoxLayout):
+    autoflush = BooleanProperty(True)
+    originator = ObjectProperty()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.autoflush = True
+        self.queue = queue.Queue()
+
+    def set_values(self, desc='', ):
+        self.ids.desc.text = desc
+
+    def update(self, progress):
+
+        try:
+            progress = float(progress)
+        except Exception as ex:
+            print('[ERROR] WRONG VALUE {}'.format(ex))
+        else:
+            self.ids.progress.width = progress * (self.size[0] - self.ids.percent.size[0])
+            self.ids.percent.text = '{}%'.format(int(progress * 100))
+            if progress == 1 and self.autoflush:
+                self.flush()
+
+    @staticmethod
+    def mk_bar():
+        return ProgressRow()
+
+    def add_bar(self, bar):
+
+        def add(_):
+            self.ids.bars_space.add_widget(bar, index=len(self.ids.bars_space.children))
+        Clock.schedule_once(add, 0.01)
+
+    def show_bars(self, hide=False):
+        if hide:
+            self.ids.scroll.height = 0
+            self.hide_actions()
+            self.ids.show_bars.src_path = 'img/arrow_up.png'
+            self.originator.on_popup_dismiss()
+        else:
+            self.ids.scroll.height = .7 * Window.height
+            self.ids.show_bars.src_path = 'img/arrow_down.png'
+            self.originator.on_popup()
+
+    def transfer_start(self):
+        self.ids.short_info.text = 'Transferring files'
+
+    def transfer_stop(self):
+        for bar in self.ids.bars_space.children:
+            if not bar.my_thread.done:
+                print(bar.my_thread.filename, 'NOT UPLOADED')
+                break
+        else:
+            self.ids.short_info.text = 'Files transferred'
+
+    def show_actions(self):
+        self.ids.actions.height = 26
+
+    def hide_actions(self):
+        self.ids.actions.height = 0
+
+    def overwrite_all(self):
+        self.hide_actions()
+        for bar in self.ids.bars_space.children:
+            bar.hide_actions()
+            bar.my_thread.overwrite()
+
+    def skip_all(self):
+        self.hide_actions()
+        for bar in self.ids.bars_space.children:
+            bar.hide_actions()
+            bar.my_thread.skip()
+
+    def clear(self):
+        print('CLEAR BARS')
+        self.skip_all()
+        self.manager.threads.clear()
+        self.show_bars(hide=True)
+        self.ids.bars_space.clear_widgets()
+        self.height = 0
+
+    def stop(self):
+        self.manager.stop_transfers()
+
+    def flush(self):
+        self.ids.progress.width = 0
+        self.ids.percent.text = ''
