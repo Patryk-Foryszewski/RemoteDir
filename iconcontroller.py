@@ -34,7 +34,6 @@ class IconController(BoxLayout):
         self.previous_touch = None
         self.collided = False
         self.pressed_key = ''
-        self.enabled_rename = False
 
     @classmethod
     def from_attrs(cls, attrs, space):
@@ -117,7 +116,6 @@ class IconController(BoxLayout):
         def delay(_):
             self.ids.filename.disabled = False
             self.ids.filename.focus = True
-            self.enabled_rename = True
         Clock.schedule_once(delay, 0.3)
 
     def on_touch_down(self, touch):

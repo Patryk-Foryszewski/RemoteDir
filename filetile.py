@@ -8,7 +8,6 @@ class FileTile(IconController):
         space.add_widget(self)
         self._keyboard.bind(on_enter=self.on_enter)
         self._keyboard.bind(on_key_down=self.key_press)
-        #Clock.schedule_interval(self.new_name, 2)
         self.i = 0
 
     def new_name(self, _):
@@ -23,10 +22,7 @@ class FileTile(IconController):
         else:
             width = 300
 
-        self.size = width, width + .3*width
+        self.ids.pic.size = width, width
 
     def set_pos(self, dx, dy):
         self.pos = self.pos[0] + dx, self.pos[1] + dy
-
-    def on_enabled_rename(self):
-        self.ids.filename.full_text()
