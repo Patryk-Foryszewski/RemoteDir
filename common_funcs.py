@@ -1,3 +1,4 @@
+import logging
 import os
 import stat
 import sys
@@ -6,6 +7,33 @@ import winreg
 import pathlib
 from hurry.filesize import size
 from datetime import datetime
+
+
+def mk_logger(name, _format=None):
+    from common_vars import log_file
+    # Create a custom logger
+    if not _format:
+        _format = '[%(levelname)-8s] [%(asctime)s] [%(message)s]'
+    logger = logging.getLogger(name)
+
+    # Create handlers
+    c_handler = logging.StreamHandler()
+    f_handler = logging.FileHandler(log_file)
+    c_handler.setLevel(logging.DEBUG)
+    f_handler.setLevel(logging.DEBUG)
+
+    # Create formatters and add it to handlers
+    c_format = logging.Formatter(_format)
+    f_format = logging.Formatter(_format)
+    c_handler.setFormatter(c_format)
+    f_handler.setFormatter(f_format)
+
+    # Add handlers to the logger
+    logger.addHandler(c_handler)
+    logger.addHandler(f_handler)
+    logger.setLevel(logging.DEBUG)
+
+    return logger
 
 
 def tell_me_about(text, _object):
@@ -234,3 +262,4 @@ def get_dir_attrs(path, sftp):
     attrs.filename = os.path.split(path)[1]
     attrs.longname = str(attrs)
     return attrs
+
