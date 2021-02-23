@@ -1,6 +1,12 @@
 from threading import Thread
-from common_funcs import posix_path, confirm_popup, get_dir_attrs
+from common_funcs import posix_path, confirm_popup, get_dir_attrs, mk_logger
 from threads.upload import Upload
+
+logger = mk_logger(__name__)
+ex_log = mk_logger(name=f'{__name__}-EX',
+                   level=40,
+                   _format='[%(levelname)-8s] [%(asctime)s] [%(name)s] [%(funcName)s] [%(lineno)d] [%(message)s]')
+ex_log = ex_log.exception
 
 
 class MkRemoteDirs(Thread):
@@ -17,21 +23,22 @@ class MkRemoteDirs(Thread):
         self.makedirs()
 
     def delete_file(self, popup, content, answer):
-        print('DELETE FILE', answer)
+        path = content._args
+        logger.info(f'Deleting file {path}')
+
         if answer == 'yes':
             self.sftp = self.manager.get_sftp()
 
             if self.sftp:
-                path = content._args
-                print('     PATH', path)
                 # noinspection PyBroadException
                 try:
                     self.sftp.remove(path)
                     self.sftp.makedirs(path)
                     attrs = get_dir_attrs(path, self.sftp)
-                except Exception:
-                    print('COULD NOT MAKE SFTP DIRECTORY')
+                except Exception as ex:
+                    ex_log(f'Failed to delete file {ex}')
                 else:
+                    logger.info(f'File deleted - {path}')
                     self.manager.sftp_queue.put(self.sftp)
                     self.manager.uploaded(self.dst_path, attrs)
                     self.manager.directory_created(path, Upload)
@@ -45,7 +52,7 @@ class MkRemoteDirs(Thread):
                 self.sftp.makedirs(full_path)
                 attrs = get_dir_attrs(full_path, self.sftp)
             except OSError:
-                print(f'PATH {full_path} IS A REGULAR FILE')
+                ex_log(f'Could not make dir {full_path}. Detected regular file.')
                 self.manager.locked_paths.append(full_path)
                 confirm_popup(callback=self.delete_file,
                               movable=True,
@@ -56,6 +63,7 @@ class MkRemoteDirs(Thread):
                                    f'Do you agree to delete the file and create directory?')
 
             else:
+                logger.info(f'Created directory - {_dir}')
                 self.done = True
                 if self.manager.is_current_path(self.dst_path):
                     self.manager.uploaded(self.dst_path, attrs)

@@ -13,7 +13,6 @@ from kivy.lang.builder import Builder
 from remotedir import RemoteDir
 from kivy.factory import Factory
 from adjustabletextinput import AdjustableTextInput
-from common_vars import log_file
 import os
 
 

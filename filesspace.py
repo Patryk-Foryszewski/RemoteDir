@@ -2,13 +2,20 @@ from kivy.uix.stacklayout import StackLayout
 from kivy.graphics import Color, Rectangle
 from kivy.properties import ObjectProperty
 from kivy.core.window import Window
-from common_funcs import confirm_popup, menu_popup, posix_path, is_file, tell_me_about
+from common_funcs import confirm_popup, menu_popup, posix_path, is_file, mk_logger
 import win32clipboard as clipboard
 from filetile import FileTile
 from filedetails import FileDetails
 import os
 import copy
 from functools import partial
+
+logger = mk_logger(__name__)
+ex_log = mk_logger(name=f'{__name__}-EX',
+                   level=40,
+                   _format='[%(levelname)-8s] [%(asctime)s] [%(name)s] [%(funcName)s] [%(lineno)d] [%(message)s]')
+ex_log = ex_log.exception
+
 
 class FilesSpace(StackLayout):
     originator = ObjectProperty()
@@ -52,7 +59,6 @@ class FilesSpace(StackLayout):
             icon.enable_rename()
 
     def add_file(self, attrs):
-        print('ADD FILE', attrs.filename, len(self.children))
         # in case file was overwritten during upload
         # find the file and remove it from view.
         for file in self.children:
@@ -71,14 +77,12 @@ class FilesSpace(StackLayout):
         Removes icon from filespace.
         Icon can be given as filename (str) or object as instance of FileTile, FileDetails etc.
         """
-        print('REMOVE FILE', file)
         if type(file) == str:
             for _file in self.children:
                 if file == _file.filename:
                     file = _file
                     break
             else:
-                print('file is not on the list')
                 return
 
         for i, attrs in enumerate(self.attrs_list):

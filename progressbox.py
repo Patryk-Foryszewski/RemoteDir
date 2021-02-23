@@ -15,20 +15,15 @@ class ProgressBox(BoxLayout):
         self.autoflush = True
         self.queue = queue.Queue()
 
-    def set_values(self, desc='', ):
+    def set_values(self, desc=''):
         self.ids.desc.text = desc
 
     def update(self, progress):
-
-        try:
-            progress = float(progress)
-        except Exception as ex:
-            print('[ERROR] WRONG VALUE {}'.format(ex))
-        else:
-            self.ids.progress.width = progress * (self.size[0] - self.ids.percent.size[0])
-            self.ids.percent.text = '{}%'.format(int(progress * 100))
-            if progress == 1 and self.autoflush:
-                self.flush()
+        progress = float(progress)
+        self.ids.progress.width = progress * (self.size[0] - self.ids.percent.size[0])
+        self.ids.percent.text = '{}%'.format(int(progress * 100))
+        if progress == 1 and self.autoflush:
+            self.flush()
 
     @staticmethod
     def mk_bar():
@@ -81,7 +76,6 @@ class ProgressBox(BoxLayout):
             bar.my_thread.skip()
 
     def clear(self):
-        print('CLEAR BARS')
         self.skip_all()
         self.manager.threads.clear()
         self.show_bars(hide=True)

@@ -4,7 +4,7 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from colors import colors
 from common_funcs import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path
-from common_funcs import remote_path_exists, get_dir_attrs
+from common_funcs import remote_path_exists, get_dir_attrs, mk_logger
 from common_vars import download_path, default_remote
 from configparser import ConfigParser
 from filesspace import FilesSpace
@@ -17,6 +17,13 @@ import queue
 import os
 from paramiko.ssh_exception import SSHException
 import copy
+
+logger = mk_logger(__name__)
+ex_log = mk_logger(name=f'{__name__}-EX',
+                   level=40,
+                   _format='[%(levelname)-8s] [%(asctime)s] [%(name)s] [%(funcName)s] [%(lineno)d] [%(message)s]')
+ex_log = ex_log.exception
+
 
 class RemoteDir(BoxLayout):
     bcolor = ListProperty()
@@ -35,7 +42,6 @@ class RemoteDir(BoxLayout):
         self.files_queue = queue.LifoQueue()
         self.paths_history = []
         self.tasks_queue = None
-        self.transfer_manager = None
         self.base_path = None
         self.connect_event = None
         self.connection = None
@@ -87,7 +93,7 @@ class RemoteDir(BoxLayout):
         try:
             attrs_list = self.sftp.listdir_attr()
         except Exception as ex:
-            print('LIST DIR EXCEPTION', ex)
+            ex_log(f'List dir exception {ex}')
         else:
             self.files_space.fill(attrs_list)
 
@@ -116,12 +122,12 @@ class RemoteDir(BoxLayout):
         self.on_popup()
 
     def make_dir(self, name):
-        print('REMOTE DIR, MAKE DIR', name)
+
         try:
             self.sftp.mkdir(name)
             attrs = get_dir_attrs(path=posix_path(self.get_current_path(), name), sftp=self.sftp)
         except Exception as ex:
-            print('MAKE DIR, EXCEPTION', ex)
+            ex_log(f'Make dir exception {ex}')
             return False
         else:
             self.files_space.add_icon(attrs, new_dir=True)
@@ -134,7 +140,6 @@ class RemoteDir(BoxLayout):
                    widget=self.ids.file_size)
 
     def connect(self, popup=None, password=None):
-        print('CONNECT', popup)
         if popup:
             popup.dismiss()
 
@@ -145,27 +150,29 @@ class RemoteDir(BoxLayout):
         try:
             self.connection.start()
         except ConfigNotFound:
+            ex_log('Config not found')
             credential_popup(callback=self.connect)
             return False
         except InvalidConfig as ic:
             credential_popup(callback=self.connect, errors=ic.errors)
             return False
         except HosKeyNotFound as nf:
+            logger.info('Host key not found')
             self.connection.hostkeys.connect = self.connect
             self.connection.hostkeys.hostkey_popup(nf.message)
             return False
         except HostkeyMatchError as me:
+            ex_log(f'Hostkey\'s match error {me.message}')
             self.connection.hostkeys.connect = self.connect
             self.connection.hostkeys.hostkey_popup(me.message)
             return False
         except SSHException as she:
-            print('CONNECTION SSHException', type(she), "#", she)
+            ex_log(f'Connection exception, {she}')
             self.reconnect()
         except Exception as ex:
-            print('CONNECTION ERROR', type(ex), "#", ex)
-
+            ex_log(f'Unknown connection exception, {ex}')
         else:
-
+            logger.info('Succesfully connected to server')
             self.sftp = self.connection.sftp
             self.chdir(self.current_path)
             self.get_base_path()
@@ -184,9 +191,9 @@ class RemoteDir(BoxLayout):
         self.connect_event = Clock.schedule_once(con,  5)
 
     def get_base_path(self):
-        """creates string holding the path user login to."""
+        """Creates string holding the path user login to."""
 
-        if not hasattr(self, 'base_path'):
+        if not self.base_path:
             self.base_path = self.get_current_path()
 
     def window_focus(self, *args):
@@ -268,12 +275,14 @@ class RemoteDir(BoxLayout):
             try:
                 self.sftp.remove(path)
             except IOError as ie:
+                ex_log(f'Failed to remove file {ie}')
                 if ie.errno == 2:
                     if not self.sftp.exists(path):
                         self.files_space.remove_file(file)
 
                 return False
-            except Exception:
+            except Exception as ex:
+                ex_log(f'Failed to remove file {ex}')
                 return False
             else:
                 self.remove_from_view(file)
@@ -285,21 +294,24 @@ class RemoteDir(BoxLayout):
             attrs = self.sftp.lstat(path)
             attrs.filename = os.path.split(path)[1]
             attrs.longname = str(attrs)
-        except Exception:
+        except Exception as ex:
+            ex_log(f'Failed to get file attrs {ex}')
             return None
         else:
             return attrs
 
     def rename_file(self, old, new, file, drop=False):
+
         old_path = posix_path(self.get_current_path(), old)
         new_path = posix_path(self.get_current_path(), new)
         if not self.sftp.exists(new_path):
             try:
                 self.sftp.rename(old_path, new_path)
             except IOError as ie:
-                print('COULD NOT RENAME FILE', old_path, '-TO-', new_path, ie)
+                ex_log(f'Failed to rename file {ie}')
                 file.filename = old
             else:
+                logger.info(f'File renamed from {file.filename} to {os.path.split(new)[1]}')
                 if drop:
                     self.files_space.remove_file(file)
                 else:
@@ -316,13 +328,21 @@ class RemoteDir(BoxLayout):
                           )
 
     def remove_and_rename(self, popup, content, answer):
+        """
+        If user tries to rename file to name that already exists in current directory
+        this method gives ability to remove existing file and rename file.
 
+        :param popup:
+        :param content:
+        :param answer:
+        :return:
+        """
         if answer == 'yes':
             try:
                 self.sftp.remove(content._args[0])
             except Exception as ex:
                 content.text = 'Could not remove file. Try again later'
-                print('COULD NOT REMOVE AND RENAME FILE', ex)
+                ex_log(f'Failed to remove and rename file {ex}')
             else:
                 popup.dismiss()
                 self.rename_file(content._args[1], content._args[2], content._args[3], content._args[4])
@@ -339,9 +359,11 @@ class RemoteDir(BoxLayout):
                 else:
                     rpath = posix_path(path, f.filename)
                     self.sftp.remove(rpath)
-        except Exception:
+        except Exception as ex:
+            ex_log(f'Failed to remove directory {ex}')
             return False
         else:
+            logger.info(f'Succesfully removed file {os.path.split(path)[1]}')
             self.sftp.rmdir(path)
             return True
 
@@ -353,16 +375,17 @@ class RemoteDir(BoxLayout):
 
     def on_popup_dismiss(self):
         self.mouse_locked = False
-        print('POPUP DISMISSED')
 
     def chdir(self, path):
         # noinspection PyBroadException
         try:
             self.sftp.chdir(path)
         except IOError as ie:
+            ex_log(f'Failed to change dir {ie}')
             if ie.errno == 2:
                 self.chdir(self.current_path)
-        except Exception:
+        except Exception as ex:
+            ex_log(f'Failed to change dir {ex}')
             self.reconnect()
             return False
         else:
@@ -379,7 +402,7 @@ class RemoteDir(BoxLayout):
         return current if current else posix_path()
 
     def uploaded(self, path, attrs):
-        print('             *UPLOADED', path, '#', self.get_current_path(), '#', attrs)
+        pass
 
     def open_file(self, file):
         if file.file_type == 'dir':

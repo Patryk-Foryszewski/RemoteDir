@@ -5,10 +5,17 @@ class InvalidConfig(Exception):
         self.errors = errors
         self.message = 'Invalid config'
 
+    def __str__(self):
+        return f'Invalid config {self.errors}'
+
+
 class ConfigNotFound(Exception):
     def __init__(self):
         super().__init__(self)
         self.message = 'Fill credentials form'
+
+    def __str__(self):
+        return f'Config not found'
 
 class HosKeyNotFound(Exception):
     def __init__(self, fingerprint):
@@ -24,6 +31,10 @@ class HosKeyNotFound(Exception):
                       Press yes if you want to add this host to known host
                     """
 
+    def __str__(self):
+        return f'HostKey not found'
+
+
 class HostkeyMatchError(Exception):
     def __init__(self, fingerprint):
         super().__init__(self)
@@ -35,3 +46,6 @@ class HostkeyMatchError(Exception):
                 Fingerprint: {fingerprint}
                 
                 Press yes if you want to add this host to known host"""
+
+    def __str__(self):
+        return f'HostKey match error'

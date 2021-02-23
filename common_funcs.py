@@ -9,9 +9,12 @@ from hurry.filesize import size
 from datetime import datetime
 
 
-def mk_logger(name, _format=None):
+def mk_logger(name, level=None, _format=None):
     from common_vars import log_file
     # Create a custom logger
+    if not level:
+        level = logging.DEBUG
+
     if not _format:
         _format = '[%(levelname)-8s] [%(asctime)s] [%(message)s]'
     logger = logging.getLogger(name)
@@ -31,7 +34,7 @@ def mk_logger(name, _format=None):
     # Add handlers to the logger
     logger.addHandler(c_handler)
     logger.addHandler(f_handler)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(level)
 
     return logger
 

@@ -8,17 +8,17 @@ from exceptions import HosKeyNotFound, HostkeyMatchError
 class HostKeyManager:
     """
     Checks if stored server key matches recived server key.
-    If no it asks for adding it to my_knownhosts
+    If no it asks for adding to my_knownhosts
     """
     def __init__(self, server, port):
-        print('HOST KEY MANAGER', server, port)
         self.server = server
         self.port = port
         self.matches = False
         self.server_key = None
+        self.connect = None
 
     def get_server_key(self):
-        t = paramiko.transport.Transport(f'{self.server}:{self.port}')
+        t = paramiko.transport.Transport(f'{self.server}:{self.port}')  # Expected type 'socked' but can be str/tuple
         t.start_client()
         return t.get_remote_server_key()
 

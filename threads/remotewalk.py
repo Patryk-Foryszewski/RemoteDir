@@ -1,8 +1,14 @@
 from threading import Thread
 import os
 import stat
-from common_funcs import confirm_popup
+from common_funcs import confirm_popup, mk_logger
 from threads.download import Download
+
+logger = mk_logger(__name__)
+ex_log = mk_logger(name=f'{__name__}-EX',
+                   level=40,
+                   _format='[%(levelname)-8s] [%(asctime)s] [%(name)s] [%(funcName)s] [%(lineno)d] [%(message)s]')
+ex_log = ex_log.exception
 
 
 class RemoteWalk(Thread):
@@ -16,7 +22,6 @@ class RemoteWalk(Thread):
         self.sftp = sftp
 
     def run(self):
-        print('REMOTEWALK')
         try:
             self.sftp.walktree(remotepath=self.src_path,
                                fcallback=self.fcallback,
@@ -58,7 +63,8 @@ class RemoteWalk(Thread):
                 os.remove(content._args)
             except Exception as ex:
                 content.text = f'Could not remove file.\n{ex}'
-                print('COULD NOT REMOVE FILE', ex)
+                popup.auto_dimiss = True
+                ex_log(f'Failed to remove file')
 
             else:
                 popup.dismiss()

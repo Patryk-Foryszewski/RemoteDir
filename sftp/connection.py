@@ -1,8 +1,10 @@
-from common_funcs import get_config, credential_popup
+from common_funcs import get_config, mk_logger
 from common_vars import my_knownhosts
 from sftp.hostkeymanager import HostKeyManager
 from exceptions import InvalidConfig
 import pysftp
+
+logger = mk_logger(__name__)
 
 
 class Connection:
@@ -52,14 +54,14 @@ class Connection:
         cnopts = pysftp.CnOpts(my_knownhosts)
         try:
             sftp = pysftp.Connection(
-                                                    host=self.server,
-                                                    username=self.user,
-                                                    password=self.password,
-                                                    private_key=self.private_key,
-                                                    private_key_pass=self.private_key_pass,
-                                                    cnopts=cnopts)
+                                    host=self.server,
+                                    username=self.user,
+                                    password=self.password,
+                                    private_key=self.private_key,
+                                    private_key_pass=self.private_key_pass,
+                                    cnopts=cnopts)
         except Exception as ex:
-            print('FAILED TO CONNECT', ex)
+            logger.exception(f'Failed to connect to server {ex}')
             return False
         else:
             return sftp

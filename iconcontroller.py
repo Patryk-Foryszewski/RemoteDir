@@ -34,7 +34,8 @@ class IconController(BoxLayout):
         self.previous_touch = None
         self.collided = False
         self.pressed_key = ''
-
+        self.counter = 0
+        
     @classmethod
     def from_attrs(cls, attrs, space):
         if attrs.longname[0] == 'd':
@@ -88,25 +89,21 @@ class IconController(BoxLayout):
                 error = 'Could not change filename.\n\nReason: {}'.format(ve.args[0])
             else:
                 error = 'Could not change filename.\n\nReason: {}'.format(ve.reason)
-            #self.ids.filename.text = self.filename
         except Exception:
             error = 'Unknown exception'
         finally:
             if error:
-                #self.ids.filename.text = self.filename
-                print('FILENAME EXCEPTION', text)
                 return False
             else:
                 return True
 
     def rename_file(self, text):
-        print('RENAME FILE', text, self.filename, text != self.filename)
+
         self.ids.filename.disabled = True
         self.ids.filename.focus = False
         if not self.filename_valid(text):
             return
         if text != self.filename:
-            print('FILENAME CHANGED, OLD', self.filename, 'NEW', text)
             self.space.rename_file(old=self.filename, new=text, file=self)
             self.ids.filename.disabled = True
             self.focus = False
@@ -121,22 +118,29 @@ class IconController(BoxLayout):
     def on_touch_down(self, touch):
 
         if self.collide_point(*touch.pos) and not self.pressed_key:
-
-            if self.focus \
-                    and touch.button == 'left'\
-                    and not touch.is_double_tap:
-                self.enable_rename()
-            else:
+            self.counter += 1
+            if not self.focus:
                 self.enabled_rename = False
                 self.focus = True
-
         else:
-            self.ids.filename.disabled = True
+            self.counter = 0
+
         return super().on_touch_down(touch)
 
     def on_touch_up(self, touch):
         # print('TOUCH UP FBX', touch.button)
         # Because on_touch_up is fired few times on each FileBox. This is issue to be solved
+        if self.ids.filename.collide_point(*touch.pos) and not self.pressed_key:
+
+            if self.focus \
+                    and touch.button == 'left'\
+                    and not touch.is_double_tap\
+                    and not self.space.moving\
+                    and len(self.space.marked_files) == 1\
+                    and self.counter == 2:
+                self.enable_rename()
+        else:
+            self.ids.filename.disabled = True
 
         if self.previous_touch == touch:
             return

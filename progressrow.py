@@ -4,11 +4,10 @@ from kivy.clock import Clock
 
 class ProgressRow(BoxLayout):
     def __init__(self, my_thread=None, **kwargs):
-
         super().__init__(**kwargs)
         self.my_thread = my_thread
 
-    def set_values(self, desc='', ):
+    def set_values(self, desc=''):
         self.ids.desc.text = desc
 
     def file_exists_error(self):
@@ -21,13 +20,9 @@ class ProgressRow(BoxLayout):
         self.my_thread.overwrite()
 
     def update(self, *args):
-        try:
-            progress = float(args[0]/args[1])
-        except Exception as ex:
-            print('[ERROR] WRONG VALUE {}'.format(ex))
-        else:
-            self.ids.progress.width = progress * (self.size[0] - self.ids.percent.size[0])
-            self.ids.percent.text = '{}%'.format(int(progress * 100))
+        progress = float(args[0]/args[1])
+        self.ids.progress.width = progress * (self.size[0] - self.ids.percent.size[0])
+        self.ids.percent.text = '{}%'.format(int(progress * 100))
 
     def done(self):
         self.set_values(f'{self.ids.desc.text} - Completed')

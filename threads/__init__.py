@@ -16,10 +16,16 @@ from weakref import WeakValueDictionary
 import os
 import stat
 import queue
-from common_funcs import posix_path, pure_windows_path, confirm_popup, is_local_file, get_dir_attrs
+from common_funcs import posix_path, pure_windows_path, mk_logger
 from kivy.clock import Clock
 from functools import partial
 from datetime import datetime
+
+logger = mk_logger(__name__)
+ex_log = mk_logger(name=f'{__name__}-EX',
+                   level=40,
+                   _format='[%(levelname)-8s] [%(asctime)s] [%(name)s] [%(funcName)s] [%(lineno)d] [%(message)s]')
+ex_log = ex_log.exception
 
 
 class SingletonMeta(type):
@@ -57,7 +63,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.thread_queue = queue.Queue()
         self.originator = originator
         self.progress_box = progress_box
-        self.delay = 0.1
+        self.delay = 0.01
         self.max_connections = 3
         self.threads = []
         self.time = datetime.now()
@@ -90,13 +96,14 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                 self.transfers.put({**task})
 
     def start_transfers(self):
-        if not hasattr(self, 'transfers_event'):
+        if not self.transfers_event:
             self.transfers_event = Clock.schedule_interval(self.next_transfer, self.delay)
 
     def stop_transfers(self, cause=None):
+        cause = cause if cause else ''
+        logger.info(f'Thread manager stop. {cause}')
         self.transfers_event.cancel()
-        del self.transfers_event
-        print('THREAD MANAGER STOP', cause)
+        self.transfers_event = None
 
     def reconnect(self, _=None):
         sftp = self.connect()
@@ -111,7 +118,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         try:
             sftp = conn.connect()
         except Exception as ex:
-            print('FAILED TO CONNECT', ex)
+            ex_log(f'Connection exception {ex}')
             self.stop_transfers(ex)
             self.reconnect()
             return None
@@ -158,7 +165,6 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         :param _:
         :return:
         """
-
         if not self.thread_queue.empty() and not self.transfers.empty():
             # print('NEXT TRANSFER DT', args, '#', datetime.now() - self.time)
             self.time = datetime.now()
@@ -186,6 +192,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                         bar = transfer['bar']
                     thread = Upload(transfer, manager=self, bar=bar, sftp=sftp)
             elif transfer['type'] == 'download':
+                print('DOWNLOAD')
                 if transfer['dir']:
                     thread = RemoteWalk(data=transfer, manager=self, sftp=sftp)
                 else:
@@ -205,10 +212,10 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                 self.threads.append(thread)
                 thread.start()
             else:
-                print('ERROR THREAD NONE')
+                ex_log(f'Thread None. Transfer type {transfer["type"]}')
 
         elif self.all_threads_finished():
-            self.stop_transfers()
+            self.stop_transfers('All threads finished')
             undone = 0
             for thread in self.threads:
                 if isinstance(thread, Upload) or isinstance(thread, Download):

@@ -2,6 +2,13 @@ from threading import Thread
 import os
 from threads.download import Download
 from kivy.clock import Clock
+from common_funcs import mk_logger
+
+logger = mk_logger(__name__)
+ex_log = mk_logger(name=f'{__name__}-EX',
+                   level=40,
+                   _format='[%(levelname)-8s] [%(asctime)s] [%(name)s] [%(funcName)s] [%(lineno)d] [%(message)s]')
+ex_log = ex_log.exception
 
 
 class Open(Thread):
@@ -22,6 +29,7 @@ class Open(Thread):
         self.bar = None
 
     def run(self):
+        logger.info(f'Opening file {self.file_name}')
         if os.path.exists(self.dst_path):
             local_attrs = os.stat(self.dst_path)
             remote_attrs = self.sftp.stat(self.src_path)
