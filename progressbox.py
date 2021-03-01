@@ -52,7 +52,6 @@ class ProgressBox(BoxLayout):
     def transfer_stop(self):
         for bar in self.ids.bars_space.children:
             if not bar.my_thread.done:
-                print(bar.my_thread.filename, 'NOT UPLOADED')
                 break
         else:
             self.ids.short_info.text = 'Files transferred'

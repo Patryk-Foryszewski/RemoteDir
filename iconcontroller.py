@@ -2,7 +2,8 @@ from kivy.properties import StringProperty, BooleanProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.core.window import Window
 from pathvalidate import ValidationError, validate_filename
-from common_funcs import get_progid, convert_file_size, unix_time
+from common_funcs import get_progid, convert_file_size, unix_time, file_ext, local_path_exists
+from common_vars import forbidden_names, img_extensions, thumb_name
 from kivy.clock import Clock
 
 
@@ -23,6 +24,7 @@ class IconController(BoxLayout):
         self._keyboard.bind(on_key_up=self.key_up)
         self.attrs = attrs
         self.filename = self.attrs.filename
+        self.path = attrs.path
         self.image = img
         self.date_added = unix_time(attrs.st_atime)
         self.date_modified = unix_time(attrs.st_mtime)
@@ -35,7 +37,8 @@ class IconController(BoxLayout):
         self.collided = False
         self.pressed_key = ''
         self.counter = 0
-        
+        self.thumbnail()
+
     @classmethod
     def from_attrs(cls, attrs, space):
         if attrs.longname[0] == 'd':
@@ -80,6 +83,9 @@ class IconController(BoxLayout):
         error = ''
         # noinspection PyBroadException
         try:
+            if text in forbidden_names:
+                return ValidationError(description=f'Forbidden name {text}')
+
             validate_filename(text)
 
         except ValidationError as ve:
@@ -89,16 +95,23 @@ class IconController(BoxLayout):
                 error = 'Could not change filename.\n\nReason: {}'.format(ve.args[0])
             else:
                 error = 'Could not change filename.\n\nReason: {}'.format(ve.reason)
-        except Exception:
-            error = 'Unknown exception'
+        except Exception as ex:
+            error = f'Unknown exception: {ex}'
+
         finally:
             if error:
                 return False
             else:
                 return True
 
-    def rename_file(self, text):
+    def thumbnail(self):
+        image = thumb_name(self.path, self.filename)
+        if local_path_exists(image):
+            print('IMG', image)
+            self.image = ''
+            self.image = image
 
+    def rename_file(self, text):
         self.ids.filename.disabled = True
         self.ids.filename.focus = False
         if not self.filename_valid(text):

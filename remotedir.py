@@ -4,19 +4,21 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from colors import colors
 from common_funcs import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path
-from common_funcs import remote_path_exists, get_dir_attrs, mk_logger
-from common_vars import download_path, default_remote
+from common_funcs import remote_path_exists, get_dir_attrs, mk_logger, pure_windows_path
+from common_vars import download_path, default_remote, thumb_dir, thumb_name
 from configparser import ConfigParser
 from filesspace import FilesSpace
 from progressbox import ProgressBox
 from sftp.connection import Connection
 from exceptions import *
 from threads import TransferManager
+from threads.thumbdownload import ThumbDownload
 import stat
 import queue
 import os
 from paramiko.ssh_exception import SSHException
 import copy
+from functools import partial
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -49,6 +51,7 @@ class RemoteDir(BoxLayout):
         self.childs_to_light = None
         self.files_space = None
         self.progress_box = None
+        self.thumb = True
 
     def on_kv_post(self, base_widget):
         self.childs_to_light = [self.ids.current_path, self.ids.search, self.ids.settings,
@@ -88,17 +91,50 @@ class RemoteDir(BoxLayout):
 
         return super().on_touch_move(touch)
 
+    def compare_thumbs(self):
+        """
+        Checks if thumbnails are up to date with the one on remote disk.
+        If thumb is not up to date or does not exist download thumbnail from remote.
+        """
+        print('COMPARE THUMBNAILS')
+        if not self.thumb:
+            return
+        remote_attrs = self.sftp.listdir_attr(posix_path(self.get_current_path(), thumb_dir))
+        downloads = []
+        for file in remote_attrs:
+            thumb_path = thumb_name(self.get_current_path(), file.filename)
+            if os.path.exists(thumb_path):
+                local_attrs = os.lstat(thumb_name(self.get_current_path(), file.filename))
+                if file.st_mtime != local_attrs.st_mtime:
+                    downloads.append(file.filename)
+
+            else:
+                downloads.append(file.filename)
+
+        if downloads:
+            src = posix_path(self.get_current_path(), thumb_dir)
+
+            td = ThumbDownload(src, downloads, self.get_current_path(), self.sftp, self.files_space.refresh_thumbnail)
+            td.start()
+            td.join()
+
     def list_dir(self):
         # print('DIRS', self.sftp.listdir_attr())
+        self.compare_thumbs()
+
         try:
             attrs_list = self.sftp.listdir_attr()
         except Exception as ex:
             ex_log(f'List dir exception {ex}')
         else:
+            path = self.get_current_path()
+            for attrs in attrs_list:
+                attrs.path = path
             self.files_space.fill(attrs_list)
 
     def add_file(self, path, attrs, _):
         if path == self.get_current_path():
+            attrs.path = self.get_current_path()
             self.files_space.add_file(attrs)
 
     def sort_menu(self):
@@ -130,6 +166,7 @@ class RemoteDir(BoxLayout):
             ex_log(f'Make dir exception {ex}')
             return False
         else:
+            attrs.path = self.get_current_path()
             self.files_space.add_icon(attrs, new_dir=True)
 
     def file_size(self):

@@ -1,23 +1,24 @@
 import logging
 import os
 import stat
-import sys
 import binascii
 import winreg
 import pathlib
 from hurry.filesize import size
 from datetime import datetime
-
+from common_vars import log_file
 
 def mk_logger(name, level=None, _format=None):
-    from common_vars import log_file
+
     # Create a custom logger
     if not level:
         level = logging.DEBUG
 
     if not _format:
-        _format = '[%(levelname)-8s] [%(asctime)s] [%(message)s]'
+        _format = '[%(levelname)-7s] [%(asctime)s] [%(message)s]'
     logger = logging.getLogger(name)
+    # prevents log messages from being sent to the root logger
+    logger.propagate = 0
 
     # Create handlers
     c_handler = logging.StreamHandler()
@@ -92,12 +93,6 @@ def int_validation(to_validate):
         return [False, ex]
     else:
         return [True, validated]
-
-
-def app_name():
-    """Returns app name as dir name"""
-
-    return (os.path.split(sys.argv[0])[1]).split('.')[0]
 
 
 def fingerprint(key):
@@ -231,6 +226,7 @@ def posix_path(*args):
 
 
 def pure_windows_path(*args):
+
     return rf'{str(pathlib.PureWindowsPath(*args))}'
 
 
@@ -265,4 +261,7 @@ def get_dir_attrs(path, sftp):
     attrs.filename = os.path.split(path)[1]
     attrs.longname = str(attrs)
     return attrs
+
+def file_ext(name):
+    return os.path.splitext(name)[1]
 

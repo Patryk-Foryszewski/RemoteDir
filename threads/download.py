@@ -13,7 +13,6 @@ ex_log = ex_log.exception
 class Download(Thread):
     def __init__(self, data, manager, sftp, bar, preserve_mtime=False):
         super().__init__()
-
         self.data = data
         self.src_path = data['src_path']
         self.dst_path = data['dst_path']
@@ -47,6 +46,8 @@ class Download(Thread):
                 logger.info(f'File {self.filename} downloaded succesfully')
                 self.bar.done()
                 self.done = True
+                if self.callback:
+                    self.callback(self.filename)
 
         self.manager.thread_queue.put('.')
         self.manager.sftp_queue.put(self.sftp)

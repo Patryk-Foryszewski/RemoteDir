@@ -3,6 +3,7 @@ from kivy.graphics import Color, Rectangle
 from kivy.properties import ObjectProperty
 from kivy.core.window import Window
 from common_funcs import confirm_popup, menu_popup, posix_path, is_file, mk_logger
+from common_vars import hidden_files
 import win32clipboard as clipboard
 from filetile import FileTile
 from filedetails import FileDetails
@@ -54,6 +55,8 @@ class FilesSpace(StackLayout):
 
     def add_icon(self, attrs, new_dir=False):
         """New dir means the dir was created remotely"""
+        if attrs.filename in hidden_files:
+            return
         icon = self.icon.from_attrs(attrs=attrs, space=self)
         if new_dir:
             icon.enable_rename()
@@ -68,6 +71,11 @@ class FilesSpace(StackLayout):
                 break
         self.attrs_list.append(attrs)
         self.add_icon(attrs)
+
+    def refresh_thumbnail(self, name):
+        for file in self.children:
+            if os.path.split(file.filename)[0] == os.path.split(name)[0]:
+                file.thumbnail()
 
     def rename_file(self, old, new, file):
         self.originator.rename_file(old=old, new=new, file=file)
