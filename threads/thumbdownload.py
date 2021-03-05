@@ -25,7 +25,6 @@ class ThumbDownload(Thread):
         for thumbnail in self.thumbnails:
             thumbnail = thumbnail.split('.')
             thumbnail = '.'.join([thumbnail[0], 'jpg'])
-            print('THUMB DOWNLOAD', thumbnail)
             try:
 
                 src = posix_path(self.src_path, thumbnail)
@@ -36,7 +35,6 @@ class ThumbDownload(Thread):
                 self.sftp.get(src, pure_windows_path(self.dst_path, thumb_dir, thumbnail), preserve_mtime=True)
 
             except FileNotFoundError:
-                print('THUMB NOT FOUND')
                 pass
 
             except Exception as ex:

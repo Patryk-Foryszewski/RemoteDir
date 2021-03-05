@@ -203,6 +203,25 @@ def menu_popup(originator, buttons, callback, widget=None, mouse_pos=None):
     Clock.schedule_once(open_popup, .1)
 
 
+def thumbnail_popup(originator, destination, filename, sftp):
+    from kivy.uix.popup import Popup
+    from popups.thumbnailpopup import ThumbnailPopup
+    from kivy.clock import Clock
+
+    def open_popup(_):
+        content = ThumbnailPopup(originator, destination, filename, sftp)
+        popup = Popup(
+            title=f'Drop thumbnail for {filename}',
+            auto_dismiss=True,
+            content=content,
+            size_hint=(0.7, 0.7))
+        content.popup = popup
+        popup.open()
+
+    Clock.schedule_once(open_popup, .1)
+
+
+
 def get_progid(filename):
     # noinspection PyBroadException
     try:

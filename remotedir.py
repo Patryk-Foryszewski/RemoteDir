@@ -96,14 +96,13 @@ class RemoteDir(BoxLayout):
         Checks if thumbnails are up to date with the one on remote disk.
         If thumb is not up to date or does not exist download thumbnail from remote.
         """
-        print('COMPARE THUMBNAILS')
         if not self.thumb:
             return
         remote_attrs = self.sftp.listdir_attr(posix_path(self.get_current_path(), thumb_dir))
         downloads = []
         for file in remote_attrs:
             thumb_path = thumb_name(self.get_current_path(), file.filename)
-            if os.path.exists(thumb_path):
+            if thumb_path:
                 local_attrs = os.lstat(thumb_name(self.get_current_path(), file.filename))
                 if file.st_mtime != local_attrs.st_mtime:
                     downloads.append(file.filename)

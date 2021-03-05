@@ -3,8 +3,8 @@ from iconcontroller import IconController
 
 class FileDetails(IconController):
 
-    def __init__(self, attrs, file_type, img, space, **kwargs):
-        super().__init__(attrs, file_type, img, space, **kwargs)
+    def __init__(self, attrs, file_type,space, **kwargs):
+        super().__init__(attrs, file_type, space, **kwargs)
         space.add_widget(self)
 
     def resize(self, size):

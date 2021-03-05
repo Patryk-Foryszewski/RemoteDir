@@ -2,7 +2,7 @@ from kivy.uix.stacklayout import StackLayout
 from kivy.graphics import Color, Rectangle
 from kivy.properties import ObjectProperty
 from kivy.core.window import Window
-from common_funcs import confirm_popup, menu_popup, posix_path, is_file, mk_logger
+from common_funcs import confirm_popup, menu_popup, posix_path, is_file, mk_logger, thumbnail_popup, file_ext
 from common_vars import hidden_files
 import win32clipboard as clipboard
 from filetile import FileTile
@@ -23,7 +23,7 @@ class FilesSpace(StackLayout):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        Window.bind(on_dropfile=self.external_dropfile)
+        self.bind_external_drop()
         Window.bind(mouse_pos=self.on_mouse_move)
         self._keyboard = Window.request_keyboard(self.key_press, self)
         self._keyboard.bind(on_key_down=self.key_press)
@@ -43,6 +43,7 @@ class FilesSpace(StackLayout):
         self.mark = None
         self.attrs_list = None
         self.touch = None
+        self.thumb = True
 
     def get_file_index(self, file):
         return self.children.index(file)
@@ -74,8 +75,11 @@ class FilesSpace(StackLayout):
 
     def refresh_thumbnail(self, name):
         for file in self.children:
-            if os.path.split(file.filename)[0] == os.path.split(name)[0]:
-                file.thumbnail()
+            a = file.filename.rstrip(file_ext(file.filename))
+            b = name.rstrip(file_ext(name))
+            print('SET THUMBNAIL FOR', a, b, a == b)
+            if a == b:
+                file.set_thumbnail()
 
     def rename_file(self, old, new, file):
         self.originator.rename_file(old=old, new=new, file=file)
@@ -256,12 +260,19 @@ class FilesSpace(StackLayout):
 
             if len(self.marked_files) == 1:
                 buttons = ['Rename', 'Download', 'Open', 'Delete']
+                if self.thumb:
+                    buttons.append('Add Thumbnail')
+
             else:
                 buttons = ['Delete', 'Download']
+
         else:
             buttons = ['Make dir', 'Refresh']
 
-        menu_popup(originator=self, buttons=buttons, callback=self.menu, mouse_pos=self.to_window(*self.touch.pos))
+        menu_popup(originator=self,
+                   buttons=buttons,
+                   callback=self.menu,
+                   mouse_pos=self.to_window(*self.touch.pos))
         self.on_popup()
 
     def menu(self, option):
@@ -277,6 +288,18 @@ class FilesSpace(StackLayout):
             self.make_dir()
         elif option == 'Rename':
             self.touched_file.enable_rename()
+        elif option == 'Add Thumbnail':
+            self.unbind_external_drop()
+            thumbnail_popup(originator=self,
+                            destination=self.originator.get_current_path(),
+                            filename=self.touched_file.filename,
+                            sftp=self.originator.sftp)
+
+    def bind_external_drop(self):
+        Window.bind(on_dropfile=self.external_dropfile)
+
+    def unbind_external_drop(self):
+        Window.unbind(on_dropfile=self.external_dropfile)
 
     def make_dir(self):
         i = 0

@@ -21,7 +21,7 @@ class CredentialsPopup(RelativeLayout):
 
     def __init__(self, callback=None, errors=None):
         super().__init__()
-        Window.bind(on_dropfile=self.on_dropfile)
+        self.bind_external_drop()
         self.callback = callback
         self.show_errors(errors)
         self.dismissed = False
@@ -127,7 +127,14 @@ class CredentialsPopup(RelativeLayout):
 
             self.ids.private_key.text = self.path
 
+    def bind_external_drop(self):
+        Window.bind(on_dropfile=self.on_dropfile)
+
+    def unbind_external_drop(self):
+        Window.unbind(on_dropfile=self.on_dropfile)
+
     def connect(self):
+        self.unbind_external_drop()
         if not self.validate():
             return
         self.save_config()

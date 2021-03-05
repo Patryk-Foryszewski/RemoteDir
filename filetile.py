@@ -3,8 +3,8 @@ from kivy.clock import Clock
 
 class FileTile(IconController):
 
-    def __init__(self, attrs, file_type, img, space, **kwargs):
-        super().__init__(attrs, file_type, img, space, **kwargs)
+    def __init__(self, attrs, file_type, space, **kwargs):
+        super().__init__(attrs, file_type, space, **kwargs)
         space.add_widget(self)
         self._keyboard.bind(on_enter=self.on_enter)
         self._keyboard.bind(on_key_down=self.key_press)

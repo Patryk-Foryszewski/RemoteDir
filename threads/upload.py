@@ -1,7 +1,7 @@
 from threading import Thread
 from common_funcs import posix_path, mk_logger
 from common_vars import thumb_dir
-from processes.thumbnail import Thumbnail
+from processes.thumbnail import ThumbnailGenerator
 import os
 
 logger = mk_logger(__name__)
@@ -40,19 +40,7 @@ class Upload(Thread):
                 self.file_exists()
             self.put(self.src_path, self.full_remote_path, self.preserve_mtime)
 
-            if self.thumb:
-                th = Thumbnail(self.src_path, self.dst_path)
-                th.start()
-                th.join()
-                if th.ok:
-                    self.bar.set_values(f'Uploading thumbnail of {self.file_name}')
-                    self.bar.flush()
-                    if self.thumb_dir_exists():
-                        print('THUMB PATH', th.thumb_path, '&', posix_path(self.dst_path, thumb_dir, self.file_name))
-                        self.put(th.thumb_path, posix_path(self.dst_path, thumb_dir, self.file_name), True)
-                    else:
-                        logger.info(f'Thumbnail for {self.file_name} not uploaded')
-            self.manager.uploaded(self.dst_path, self.attrs)
+
         except FileExistsError:
             logger.info(f'File {self.file_name} exists')
             self.bar.file_exists_error()
@@ -76,12 +64,30 @@ class Upload(Thread):
         else:
             logger.info(f'Uploading {self.file_name} completed successfully')
             self.done = True
+            self.upload_thumbnail()
+            self.manager.uploaded(self.dst_path, self.attrs)
             self.bar.done()
-
-
         finally:
             self.manager.sftp_queue.put(self.sftp)
             self.manager.thread_queue.put('.')
+
+    def upload_thumbnail(self):
+        if self.thumb:
+            try:
+                th = ThumbnailGenerator(self.src_path, self.dst_path)
+                th.start()
+                th.join()
+                if th.ok:
+                    self.bar.flush()
+                    self.bar.set_values(f'Uploading thumbnail of {self.file_name}')
+
+                    if self.thumb_dir_exists():
+                        self.put(th.thumb_path, posix_path(self.dst_path, thumb_dir, th._thumb_name), True)
+                    else:
+                        logger.info(f'Thumbnail for {self.file_name} not uploaded')
+            except Exception as ex:
+                ex_log(f'Failed to upload thumbnail for {self.file_name}. {ex}')
+
 
     def file_exists(self):
         if self.sftp.exists(self.full_remote_path):

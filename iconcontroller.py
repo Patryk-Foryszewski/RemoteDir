@@ -17,7 +17,7 @@ class IconController(BoxLayout):
     description = StringProperty()
     filesize = StringProperty()
 
-    def __init__(self, attrs, file_type, img, space, **kwargs):
+    def __init__(self, attrs, file_type, space, **kwargs):
         super().__init__(**kwargs)
         self._keyboard = Window.request_keyboard(self.key_press, self)
         self._keyboard.bind(on_key_down=self.key_press)
@@ -25,7 +25,6 @@ class IconController(BoxLayout):
         self.attrs = attrs
         self.filename = self.attrs.filename
         self.path = attrs.path
-        self.image = img
         self.date_added = unix_time(attrs.st_atime)
         self.date_modified = unix_time(attrs.st_mtime)
         self.space = space
@@ -37,21 +36,29 @@ class IconController(BoxLayout):
         self.collided = False
         self.pressed_key = ''
         self.counter = 0
-        self.thumbnail()
+        self.set_thumbnail()
 
     @classmethod
     def from_attrs(cls, attrs, space):
         if attrs.longname[0] == 'd':
             file_type = 'dir'
-            img = 'img/dir.png'
         else:
             file_type = 'file'
-            img = 'img/unknown.png'
-        return cls(attrs, file_type, img, space)
+        return cls(attrs=attrs, file_type=file_type, space=space)
 
     @classmethod
     def unfocus(cls):
         cls.focus = False
+
+    def set_thumbnail(self):
+        image = thumb_name(self.path, self.filename)
+        self.image = ''
+        if image:
+            self.image = image
+        elif self.file_type == 'dir':
+            self.image = 'img/dir.png'
+        else:
+            self.image = 'img/unknown.png'
 
     def get_description(self):
         if self.file_type == 'dir':
@@ -104,12 +111,7 @@ class IconController(BoxLayout):
             else:
                 return True
 
-    def thumbnail(self):
-        image = thumb_name(self.path, self.filename)
-        if local_path_exists(image):
-            print('IMG', image)
-            self.image = ''
-            self.image = image
+
 
     def rename_file(self, text):
         self.ids.filename.disabled = True
