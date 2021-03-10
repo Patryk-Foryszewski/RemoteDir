@@ -75,11 +75,9 @@ class FilesSpace(StackLayout):
 
     def refresh_thumbnail(self, name):
         for file in self.children:
-            a = file.filename.rstrip(file_ext(file.filename))
-            b = name.rstrip(file_ext(name))
-            print('SET THUMBNAIL FOR', a, b, a == b)
-            if a == b:
+            if file.filename == name:
                 file.set_thumbnail()
+                break
 
     def rename_file(self, old, new, file):
         self.originator.rename_file(old=old, new=new, file=file)

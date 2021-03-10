@@ -1,8 +1,7 @@
 from threading import Thread
 from common_funcs import is_local_file, mk_logger, posix_path, pure_windows_path
 from common_vars import cache_path, thumb_dir
-from paramiko.ssh_exception import SSHException
-import os
+
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -20,18 +19,12 @@ class ThumbDownload(Thread):
         self.thumbnails = thumbnails
         self.callback = callback
 
-
     def run(self):
         for thumbnail in self.thumbnails:
-            thumbnail = thumbnail.split('.')
-            thumbnail = '.'.join([thumbnail[0], 'jpg'])
             try:
-
                 src = posix_path(self.src_path, thumbnail)
                 if not self.sftp.exists(src):
                     raise FileNotFoundError
-                print('     SRC', src)
-                print('     DST', pure_windows_path(self.dst_path, thumb_dir, thumbnail))
                 self.sftp.get(src, pure_windows_path(self.dst_path, thumb_dir, thumbnail), preserve_mtime=True)
 
             except FileNotFoundError:
@@ -42,11 +35,3 @@ class ThumbDownload(Thread):
             else:
                 if self.callback:
                     self.callback(thumbnail)
-
-
-
-
-
-
-
-

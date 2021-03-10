@@ -82,7 +82,7 @@ class Upload(Thread):
                     self.bar.set_values(f'Uploading thumbnail of {self.file_name}')
 
                     if self.thumb_dir_exists():
-                        self.put(th.thumb_path, posix_path(self.dst_path, thumb_dir, th._thumb_name), True)
+                        self.put(th.thumb_path, posix_path(self.dst_path, thumb_dir, th.thumb_name), True)
                     else:
                         logger.info(f'Thumbnail for {self.file_name} not uploaded')
             except Exception as ex:

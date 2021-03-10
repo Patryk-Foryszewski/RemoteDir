@@ -281,6 +281,12 @@ def get_dir_attrs(path, sftp):
     attrs.longname = str(attrs)
     return attrs
 
+
 def file_ext(name):
     return os.path.splitext(name)[1]
+
+
+def thumb_name(src_path):
+    name = os.path.split(src_path)[1]
+    return f'{name}.jpg'
 

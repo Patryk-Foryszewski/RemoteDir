@@ -3,7 +3,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.core.window import Window
 from pathvalidate import ValidationError, validate_filename
 from common_funcs import get_progid, convert_file_size, unix_time, file_ext, local_path_exists
-from common_vars import forbidden_names, img_extensions, thumb_name
+from common_vars import forbidden_names, img_extensions, find_thumb
 from kivy.clock import Clock
 
 
@@ -51,14 +51,15 @@ class IconController(BoxLayout):
         cls.focus = False
 
     def set_thumbnail(self):
-        image = thumb_name(self.path, self.filename)
-        self.image = ''
+
+        image = find_thumb(self.path, self.filename)
         if image:
             self.image = image
         elif self.file_type == 'dir':
             self.image = 'img/dir.png'
         else:
             self.image = 'img/unknown.png'
+        self.ids.image.reload()
 
     def get_description(self):
         if self.file_type == 'dir':

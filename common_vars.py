@@ -79,14 +79,16 @@ def _log_file():
 log_file = _log_file()
 
 
-def thumb_name(dst_path, img_name):
+def find_thumb(dst_path, filename):
     from common_funcs import pure_windows_path
-    img_name = img_name.split('.')[0]
-
     path_to_thumbnails = pure_windows_path(cache_path, dst_path.strip('/'), thumb_dir)
+
+    if not path.exists(path_to_thumbnails):
+        return None
     thumbnails = listdir(path_to_thumbnails)
     for thumbnail in thumbnails:
-        if thumbnail.split('.')[0] == img_name:
+        _thumbnail = '.'.join(thumbnail.split('.')[0: -1])
+        if _thumbnail == filename:
             return pure_windows_path(path_to_thumbnails, thumbnail)
     else:
         return None

@@ -4,8 +4,8 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from colors import colors
 from common_funcs import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path
-from common_funcs import remote_path_exists, get_dir_attrs, mk_logger, pure_windows_path
-from common_vars import download_path, default_remote, thumb_dir, thumb_name
+from common_funcs import remote_path_exists, get_dir_attrs, mk_logger, pure_windows_path, thumb_name
+from common_vars import download_path, default_remote, thumb_dir, find_thumb
 from configparser import ConfigParser
 from filesspace import FilesSpace
 from progressbox import ProgressBox
@@ -98,12 +98,19 @@ class RemoteDir(BoxLayout):
         """
         if not self.thumb:
             return
-        remote_attrs = self.sftp.listdir_attr(posix_path(self.get_current_path(), thumb_dir))
+        remote_thumbs_path = posix_path(self.get_current_path(), thumb_dir)
+        print('REMOTE THUMBS', remote_thumbs_path)
+        try:
+            remote_attrs = self.sftp.listdir_attr(remote_thumbs_path)
+        except Exception:
+            return
+
         downloads = []
         for file in remote_attrs:
-            thumb_path = thumb_name(self.get_current_path(), file.filename)
+            thumb = thumb_name(file.filename)
+            thumb_path = find_thumb(self.get_current_path(), file.filename)
             if thumb_path:
-                local_attrs = os.lstat(thumb_name(self.get_current_path(), file.filename))
+                local_attrs = os.lstat(find_thumb(self.get_current_path(), file.filename))
                 if file.st_mtime != local_attrs.st_mtime:
                     downloads.append(file.filename)
 
@@ -111,8 +118,8 @@ class RemoteDir(BoxLayout):
                 downloads.append(file.filename)
 
         if downloads:
+            print('THUMBS TO DOWNLOAD', downloads)
             src = posix_path(self.get_current_path(), thumb_dir)
-
             td = ThumbDownload(src, downloads, self.get_current_path(), self.sftp, self.files_space.refresh_thumbnail)
             td.start()
             td.join()
@@ -336,6 +343,28 @@ class RemoteDir(BoxLayout):
         else:
             return attrs
 
+    def rename_thumbnail(self, old_name, new_name):
+        if self.thumb:
+            from common_vars import find_thumb
+            old_local_thumbnail = find_thumb(self.get_current_path(), old_name)
+            new_name = f'{new_name}.jpg'
+            old_name = f'{old_name}.jpg'
+            if old_local_thumbnail:
+                new_local_thumbnail = os.path.join(os.path.split(old_local_thumbnail)[0], new_name)
+                try:
+                    if os.path.exists(new_local_thumbnail):
+                        os.remove(new_local_thumbnail)
+                    os.rename(old_local_thumbnail, new_local_thumbnail)
+                except Exception as ex:
+                    ex_log('Failed to rename local thumbnail', ex)
+
+                old_remote_thumbnail = posix_path(self.get_current_path(), thumb_dir, old_name)
+                new_remote_thumbnail = posix_path(self.get_current_path(), thumb_dir, new_name)
+                try:
+                    self.sftp.rename(old_remote_thumbnail, new_remote_thumbnail)
+                except Exception as ex:
+                    ex_log('Failed to rename remote thumbnail', ex)
+
     def rename_file(self, old, new, file, drop=False):
 
         old_path = posix_path(self.get_current_path(), old)
@@ -355,6 +384,10 @@ class RemoteDir(BoxLayout):
                     if attrs:
                         file.attrs = copy.deepcopy(attrs)
                         file.filename = attrs.filename
+            finally:
+                self.rename_thumbnail(old, new)
+                self.files_space.refresh_thumbnail(new)
+
         else:
             confirm_popup(callback=self.remove_and_rename,
                           movable=True,
@@ -382,6 +415,8 @@ class RemoteDir(BoxLayout):
             else:
                 popup.dismiss()
                 self.rename_file(content._args[1], content._args[2], content._args[3], content._args[4])
+
+
         else:
             popup.dismiss()
 
@@ -420,6 +455,8 @@ class RemoteDir(BoxLayout):
             ex_log(f'Failed to change dir {ie}')
             if ie.errno == 2:
                 self.chdir(self.current_path)
+            elif str(ie) == 'Socket is closed':
+                self.reconnect()
         except Exception as ex:
             ex_log(f'Failed to change dir {ex}')
             self.reconnect()
