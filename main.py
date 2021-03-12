@@ -1,6 +1,4 @@
 from common_funcs import mk_logger
-logger = mk_logger(__name__)
-
 from kivy.config import Config
 Config.set('graphics', 'multisamples', '0')
 Config.set('graphics', 'width', '1066')
@@ -14,6 +12,8 @@ from remotedir import RemoteDir
 from kivy.factory import Factory
 from adjustabletextinput import AdjustableTextInput
 import os
+
+logger = mk_logger(__name__)
 
 
 class Main(App):

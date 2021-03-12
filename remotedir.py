@@ -128,6 +128,11 @@ class RemoteDir(BoxLayout):
 
         try:
             attrs_list = self.sftp.listdir_attr()
+        except OSError as ose:
+            if ose == 'Socket is closed':
+                self.callback = self.list_dir
+                self.connect(password=self.password)
+
         except Exception as ex:
             ex_log(f'List dir exception {ex}')
         else:
@@ -426,7 +431,8 @@ class RemoteDir(BoxLayout):
     def rmdir(self, remote_path, file):
         task = {'type': 'remove_remote',
                 'remote_path': remote_path,
-                'on_remove': partial(self.files_space.remove_file, file)}
+                'on_remove': partial(self.files_space.remove_file, file),
+                'progress_box': self.progress_box}
         self.execute_sftp_task(task)
 
         # try:

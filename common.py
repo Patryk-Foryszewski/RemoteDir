@@ -239,6 +239,44 @@ def thumbnail_popup(originator, destination, filename, sftp):
     Clock.schedule_once(open_popup, .1)
 
 
+def progress_popup():
+    from kivy.clock import Clock
+    from progressrow import ProgressRow
+    from kivy.uix.modalview import ModalView
+
+    content = ProgressRow()
+    popup = ModalView(
+        content=content,
+        size_hint=(None, None),
+    )
+
+    def open_popup(_):
+        popup.open()
+
+    Clock.schedule_once(open_popup, 0)
+    return popup, content
+
+
+def info_popup():
+    print('INFO POPUP')
+    from kivy.clock import Clock
+    from infolabel import InfoLabel
+    from kivy.uix.modalview import ModalView
+    content = InfoLabel()
+    popup = ModalView(
+        size_hint=(.5, None),
+        height=20,
+        pos_hint={'y': 0, 'x': .5}
+    )
+    popup.add_widget(content)
+
+    def open_popup(_):
+        popup.open()
+
+    Clock.schedule_once(open_popup, 0)
+    return popup, content
+
+
 def get_progid(filename):
     # noinspection PyBroadException
     try:
