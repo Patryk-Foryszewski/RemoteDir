@@ -2,8 +2,7 @@ from kivy.properties import StringProperty, BooleanProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.core.window import Window
 from pathvalidate import ValidationError, validate_filename
-from common_funcs import get_progid, convert_file_size, unix_time, file_ext, local_path_exists
-from common_vars import forbidden_names, img_extensions, find_thumb
+from common import get_progid, convert_file_size, unix_time, forbidden_names, find_thumb
 from kivy.clock import Clock
 
 
@@ -112,11 +111,11 @@ class IconController(BoxLayout):
             else:
                 return True
 
-
-
     def rename_file(self, text):
+        print('RENAME FILE')
         self.ids.filename.disabled = True
         self.ids.filename.focus = False
+        self.space.on_popup_dismiss()
         if not self.filename_valid(text):
             return
         if text != self.filename:
@@ -125,7 +124,7 @@ class IconController(BoxLayout):
             self.focus = False
 
     def enable_rename(self):
-
+        self.space.on_popup()
         def delay(_):
             self.ids.filename.disabled = False
             self.ids.filename.focus = True

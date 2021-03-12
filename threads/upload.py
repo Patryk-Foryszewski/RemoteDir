@@ -1,6 +1,5 @@
 from threading import Thread
-from common_funcs import posix_path, mk_logger
-from common_vars import thumb_dir
+from common import posix_path, mk_logger, thumb_dir
 from processes.thumbnail import ThumbnailGenerator
 import os
 
@@ -16,7 +15,6 @@ class Upload(Thread):
         super().__init__()
         self.data = data
         self.dst_path = data['dst_path']
-        print('UPLOAD DST', self.dst_path)
         self.src_path = data['src_path']
         self.file_name = os.path.split(self.src_path)[1]
         self.full_remote_path = posix_path(self.dst_path, self.file_name)
@@ -34,12 +32,18 @@ class Upload(Thread):
         logger.info(f'Uploading file - {self.file_name}')
         self.bar.set_values(f'Uploading {self.src_path} to {self.dst_path}')
         try:
+            if not self.sftp.exists(self.dst_path):
+                self.sftp.makedirs(self.dst_path)
+
             if self.data.get('overwrite'):
                 self.sftp.remove(self.full_remote_path)
             else:
                 self.file_exists()
             self.put(self.src_path, self.full_remote_path, self.preserve_mtime)
 
+        except FileNotFoundError:
+            ex_log(f'File {self.file_name} does\'t exists')
+            self.bar.set_values(desc=f'File {self.file_name} does\'t exists')
 
         except FileExistsError:
             logger.info(f'File {self.file_name} exists')
@@ -94,6 +98,7 @@ class Upload(Thread):
             raise FileExistsError
 
     def put(self, localpath, remotepath, preserve_mtime):
+
         self.attrs = self.sftp.put(localpath=localpath,
                                    remotepath=remotepath,
                                    callback=self.bar.update,

@@ -17,6 +17,7 @@ class ConfigNotFound(Exception):
     def __str__(self):
         return f'Config not found'
 
+
 class HosKeyNotFound(Exception):
     def __init__(self, fingerprint):
         super().__init__(self)

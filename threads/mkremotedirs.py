@@ -1,6 +1,7 @@
 from threading import Thread
-from common_funcs import posix_path, confirm_popup, get_dir_attrs, mk_logger
+from common import posix_path, confirm_popup,  mk_logger,  get_dir_attrs
 from threads.upload import Upload
+
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -71,4 +72,4 @@ class MkRemoteDirs(Thread):
         else:
             self.manager.sftp_queue.put(self.sftp)
             self.manager.thread_queue.put('.')
-            self.manager.next_transfer()
+            self.manager.next_transfer('.')

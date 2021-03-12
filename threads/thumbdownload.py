@@ -1,6 +1,5 @@
 from threading import Thread
-from common_funcs import is_local_file, mk_logger, posix_path, pure_windows_path
-from common_vars import cache_path, thumb_dir
+from common import mk_logger, posix_path, pure_windows_path, cache_path, thumb_dir
 
 
 logger = mk_logger(__name__)

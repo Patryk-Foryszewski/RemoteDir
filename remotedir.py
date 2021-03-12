@@ -3,9 +3,8 @@ from kivy.properties import StringProperty, ListProperty
 from kivy.core.window import Window
 from kivy.clock import Clock
 from colors import colors
-from common_funcs import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path
-from common_funcs import remote_path_exists, get_dir_attrs, mk_logger, pure_windows_path, thumb_name
-from common_vars import download_path, default_remote, thumb_dir, find_thumb
+from common import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path, find_thumb
+from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir
 from configparser import ConfigParser
 from filesspace import FilesSpace
 from progressbox import ProgressBox
@@ -45,13 +44,14 @@ class RemoteDir(BoxLayout):
         self.paths_history = []
         self.tasks_queue = None
         self.base_path = None
-        self.connect_event = None
         self.connection = None
         self._y = None
         self.childs_to_light = None
         self.files_space = None
         self.progress_box = None
         self.thumb = True
+        self.reconnection_tries = 0
+        self.callback = None
 
     def on_kv_post(self, base_widget):
         self.childs_to_light = [self.ids.current_path, self.ids.search, self.ids.settings,
@@ -99,7 +99,7 @@ class RemoteDir(BoxLayout):
         if not self.thumb:
             return
         remote_thumbs_path = posix_path(self.get_current_path(), thumb_dir)
-        print('REMOTE THUMBS', remote_thumbs_path)
+        # noinspection PyBroadException
         try:
             remote_attrs = self.sftp.listdir_attr(remote_thumbs_path)
         except Exception:
@@ -107,7 +107,6 @@ class RemoteDir(BoxLayout):
 
         downloads = []
         for file in remote_attrs:
-            thumb = thumb_name(file.filename)
             thumb_path = find_thumb(self.get_current_path(), file.filename)
             if thumb_path:
                 local_attrs = os.lstat(find_thumb(self.get_current_path(), file.filename))
@@ -118,7 +117,6 @@ class RemoteDir(BoxLayout):
                 downloads.append(file.filename)
 
         if downloads:
-            print('THUMBS TO DOWNLOAD', downloads)
             src = posix_path(self.get_current_path(), thumb_dir)
             td = ThumbDownload(src, downloads, self.get_current_path(), self.sftp, self.files_space.refresh_thumbnail)
             td.start()
@@ -167,7 +165,7 @@ class RemoteDir(BoxLayout):
 
         try:
             self.sftp.mkdir(name)
-            attrs = get_dir_attrs(path=posix_path(self.get_current_path(), name), sftp=self.sftp)
+            attrs = get_dir_attrs(_path=posix_path(self.get_current_path(), name), sftp=self.sftp)
         except Exception as ex:
             ex_log(f'Make dir exception {ex}')
             return False
@@ -215,23 +213,34 @@ class RemoteDir(BoxLayout):
         except Exception as ex:
             ex_log(f'Unknown connection exception, {ex}')
         else:
-            logger.info('Succesfully connected to server')
             self.sftp = self.connection.sftp
+            if not self.sftp:
+                self.reconnect()
+                return False
+            self.reconnection_tries = 0
+            logger.info('Succesfully connected to server')
             self.chdir(self.current_path)
             self.get_base_path()
-            if self.connect_event is not None:
-                self.connect_event.cancel()
-                self.connect_event = None
+            self.do_callback()
             return True
+
+    def do_callback(self):
+        if self.callback:
+            self.callback()
+            self.callback = None
 
     def remote_path_exists(self, path):
         return remote_path_exists(path, self.sftp)
 
     def reconnect(self):
+        logger.info('Reconnecting to remote server')
+
         def con(_):
             self.connect(password=self.password)
 
-        self.connect_event = Clock.schedule_once(con,  5)
+        dt = 5 + self.reconnection_tries / 10 * 10
+        self.reconnection_tries += 1
+        Clock.schedule_once(con,  dt)
 
     def get_base_path(self):
         """Creates string holding the path user login to."""
@@ -311,8 +320,7 @@ class RemoteDir(BoxLayout):
         cwd = self.sftp.getcwd()
         path = posix_path(cwd if cwd else '.', file.filename)
         if file.file_type == 'dir':
-            if self.rmdir(path):
-                return True
+            self.rmdir(path, file)
         else:
             # noinspection PyBroadException
             try:
@@ -321,15 +329,11 @@ class RemoteDir(BoxLayout):
                 ex_log(f'Failed to remove file {ie}')
                 if ie.errno == 2:
                     if not self.sftp.exists(path):
-                        self.files_space.remove_file(file)
-
-                return False
+                        self.remove_from_view(file)
             except Exception as ex:
                 ex_log(f'Failed to remove file {ex}')
-                return False
             else:
                 self.remove_from_view(file)
-                return True
 
     def get_file_attrs(self, path):
         # noinspection PyBroadException
@@ -416,27 +420,35 @@ class RemoteDir(BoxLayout):
                 popup.dismiss()
                 self.rename_file(content._args[1], content._args[2], content._args[3], content._args[4])
 
-
         else:
             popup.dismiss()
 
-    def rmdir(self, path):
-        # noinspection PyBroadException
-        try:
-            for f in self.sftp.listdir_attr(path):
-                rpath = posix_path(path, f.filename)
-                if stat.S_ISDIR(f.st_mode):
-                    self.rmdir(rpath)
-                else:
-                    rpath = posix_path(path, f.filename)
-                    self.sftp.remove(rpath)
-        except Exception as ex:
-            ex_log(f'Failed to remove directory {ex}')
-            return False
-        else:
-            logger.info(f'Succesfully removed file {os.path.split(path)[1]}')
-            self.sftp.rmdir(path)
-            return True
+    def rmdir(self, remote_path, file):
+        task = {'type': 'remove_remote',
+                'remote_path': remote_path,
+                'on_remove': partial(self.files_space.remove_file, file)}
+        self.execute_sftp_task(task)
+
+        # try:
+        #     for f in self.sftp.listdir_attr(path):
+        #         rpath = posix_path(path, f.filename)
+        #         if stat.S_ISDIR(f.st_mode):
+        #             self.rmdir(rpath)
+        #         else:
+        #             rpath = posix_path(path, f.filename)
+        #             self.sftp.remove(rpath)
+        # except OSError as ose:
+        #     if ose == 'Socket is closed':
+        #         self.callback = partial(self.rmdir, path)
+        #         self.connect()
+        #
+        # except Exception as ex:
+        #     ex_log(f'Failed to remove directory {ex}')
+        #     return False
+        # else:
+        #     logger.info(f'Succesfully removed file {os.path.split(path)[1]}')
+        #     self.sftp.rmdir(path)
+        #     return True
 
     def transfer_start(self):
         self.progress_box.transfer_start()

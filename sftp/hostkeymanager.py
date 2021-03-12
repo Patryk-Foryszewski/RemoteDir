@@ -1,7 +1,6 @@
 import os
 import paramiko
-from common_vars import my_knownhosts
-from common_funcs import fingerprint, confirm_popup
+from common import my_knownhosts, fingerprint, confirm_popup
 from exceptions import HosKeyNotFound, HostkeyMatchError
 
 

@@ -2,8 +2,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.core.window import Window
 from processes.thumbnail import ThumbnailGenerator
-from common_funcs import mk_logger, posix_path, pure_windows_path, file_ext, thumb_name
-from common_vars import thumb_dir, cache_path
+from common import mk_logger, posix_path, pure_windows_path, thumb_dir, cache_path
 from shutil import copyfile
 from os import path, remove, rename
 

@@ -12,11 +12,12 @@ from threads.download import Download
 from threads.upload import Upload
 from threads.remotewalk import RemoteWalk
 from threads.mkremotedirs import MkRemoteDirs
+from threads.removeremote import RemoveRemoteDirectory
 from weakref import WeakValueDictionary
 import os
 import stat
 import queue
-from common_funcs import posix_path, pure_windows_path, mk_logger
+from common import posix_path, pure_windows_path, mk_logger
 from kivy.clock import Clock
 from functools import partial
 from datetime import datetime
@@ -95,6 +96,9 @@ class TransferManager(Thread, metaclass=SingletonMeta):
             elif task['type'] == 'open':
                 self.transfers.put({**task})
 
+            elif task['type'] == 'remove_remote':
+                self.transfers.put({**task})
+
     def start_transfers(self):
         if not self.transfers_event:
             self.transfers_event = Clock.schedule_interval(self.next_transfer, self.delay)
@@ -105,7 +109,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.transfers_event.cancel()
         self.transfers_event = None
 
-    def reconnect(self, _=None):
+    def reconnect(self, _):
         sftp = self.connect()
         if sftp:
             self.sftp_queue.put(sftp)
@@ -166,7 +170,6 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         :return:
         """
         if not self.thread_queue.empty() and not self.transfers.empty():
-            # print('NEXT TRANSFER DT', args, '#', datetime.now() - self.time)
             self.time = datetime.now()
             self.thread_queue.get()
             transfer = self.transfers.get()
@@ -176,11 +179,9 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                 # put back on the stack to no omit this transfer
                 self.transfers.put(transfer)
                 return
-
             if transfer['type'] == 'upload':
                 if transfer['dir']:
                     thread = MkRemoteDirs(transfer, manager=self, sftp=sftp)
-
                 else:
                     if not transfer.get('bar'):
                         bar = self.progress_box.mk_bar()
@@ -192,7 +193,6 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                         bar = transfer['bar']
                     thread = Upload(transfer, manager=self, bar=bar, sftp=sftp)
             elif transfer['type'] == 'download':
-                print('DOWNLOAD')
                 if transfer['dir']:
                     thread = RemoteWalk(data=transfer, manager=self, sftp=sftp)
                 else:
@@ -207,6 +207,9 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                     thread = Download(data=transfer, manager=self, bar=bar, sftp=sftp)
             elif transfer['type'] == 'open':
                 thread = Open(data=transfer, manager=self, sftp=sftp)
+
+            elif transfer['type'] == 'remove_remote':
+                thread = RemoveRemoteDirectory(manager=self, sftp=sftp, data=transfer)
 
             if thread:
                 self.threads.append(thread)
@@ -230,7 +233,6 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         return self.transfers.empty() and self.thread_queue.qsize() == self.max_connections
 
     def end(self):
-
         if self.transfers.empty() and self.thread_queue.empty():
             self.stop_transfers()
 
@@ -245,7 +247,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
             if isinstance(thread, instance):
                 if hasattr(thread, 'waiting_for_directory'):
                     if thread.dst_path == destination:
-                        self.transfers.put({**thread.data, 'bar': thread.bar})
+                        self.put_transfer({**thread.data, 'bar': thread.bar})
                         self.start_transfers()
 
     def put_transfer(self, data, bar=None):
@@ -256,21 +258,21 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         dst_path = task['dst_path']
         local_base, dir_to_walk = os.path.split(src_path)
 
-        self.transfers.put({'type': 'upload', 'dir': True, 'dst_path': dst_path, 'name': [dir_to_walk]})
         for root, dirs, files in os.walk(src_path):
             relative_path = root.replace(local_base, '')[1:]
             relative_path = posix_path(dst_path, *relative_path.split('\\'))
-            if dirs:
-                self.put_transfer({'type': 'upload',
-                                   'dir': True,
-                                   'dst_path': relative_path,
-                                   'name': dirs})
 
             for file in files:
                 self.put_transfer({'type': 'upload',
                                    'dir': False,
                                    'src_path': pure_windows_path(root, file),
                                    'dst_path': relative_path})
+            if dirs:
+                self.put_transfer({'type': 'upload',
+                                   'dir': True,
+                                   'dst_path': relative_path,
+                                   'name': dirs})
+        self.put_transfer({'type': 'upload', 'dir': True, 'dst_path': dst_path, 'name': [dir_to_walk]})
 
     def uploaded(self, path, attrs):
         Clock.schedule_once(partial(self.originator.add_file, path, attrs), 0.01)

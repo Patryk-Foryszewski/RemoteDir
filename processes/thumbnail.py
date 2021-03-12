@@ -1,11 +1,8 @@
 from multiprocessing import Process
 from threading import Thread
 from PIL import Image, UnidentifiedImageError
-from common_funcs import mk_logger, pure_windows_path, file_ext, tell_me_about, thumb_name
-from common_vars import cache_path, thumb_dir, thumbnail_ext
+from common import mk_logger, pure_windows_path, file_ext, thumb_name, cache_path, thumb_dir
 from os import path, makedirs
-
-import subprocess
 import rawpy
 import imageio
 
@@ -28,9 +25,6 @@ class ThumbnailGenerator(Thread):
         self.cache_path = pure_windows_path(cache_path, dst_path.strip('/'), thumb_dir)
         self.thumb_path = pure_windows_path(self.cache_path, self.thumb_name)
         self.ok = False
-        print('THUMBNAIL')
-        print('     SRC', src_path)
-        print('     DST', self.thumb_path)
 
     def run(self):
         if self.thumb_name:
@@ -39,7 +33,6 @@ class ThumbnailGenerator(Thread):
     def generate_thumbnail(self):
 
         ext = file_ext(self.src_path)
-        print('GENERATE THUMBNAIL', ext, self.thumb_name)
 
         if ext in ('.pdf', '.svg'):
             return
@@ -81,6 +74,8 @@ class ThumbnailGenerator(Thread):
 
         from rawpy._rawpy import LibRawNoThumbnailError
         from rawpy._rawpy import LibRawUnsupportedThumbnailError
+        from rawpy._rawpy import LibRawIOError
+
         try:
             with rawpy.imread(self.src_path) as raw:
                 # raises LibRawNoThumbnailError if thumbnail missing
@@ -96,6 +91,8 @@ class ThumbnailGenerator(Thread):
         except LibRawNoThumbnailError:
             pass
         except LibRawUnsupportedThumbnailError:
+            pass
+        except LibRawIOError:
             pass
         except Exception as ex:
             ex_log(f'Failed to make a thumbnail {ex}')

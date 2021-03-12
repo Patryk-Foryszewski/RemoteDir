@@ -1,5 +1,5 @@
 from threading import Thread
-from common_funcs import is_local_file, mk_logger
+from common import is_local_file, mk_logger
 from paramiko.ssh_exception import SSHException
 import os
 

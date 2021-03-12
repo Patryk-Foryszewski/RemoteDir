@@ -1,5 +1,5 @@
 from kivy.uix.relativelayout import RelativeLayout
-from common_funcs import int_validation
+from common import int_validation, data_path, get_config, config_file
 from kivy.core.window import Window
 import json
 from cryptography.fernet import Fernet
@@ -8,8 +8,6 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import base64
 import shutil
-from common_vars import data_path, config_file
-from common_funcs import get_config
 from cryptography.fernet import InvalidToken
 from configparser import ConfigParser
 import os

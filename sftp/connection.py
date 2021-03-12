@@ -1,10 +1,13 @@
-from common_funcs import get_config, mk_logger
-from common_vars import my_knownhosts
+from common import get_config, mk_logger, my_knownhosts
 from sftp.hostkeymanager import HostKeyManager
 from exceptions import InvalidConfig
 import pysftp
 
 logger = mk_logger(__name__)
+ex_log = mk_logger(name=f'{__name__}-EX',
+                   level=40,
+                   _format='[%(levelname)-8s] [%(asctime)s] [%(name)s] [%(funcName)s] [%(lineno)d] [%(message)s]')
+ex_log = ex_log.exception
 
 
 class Connection:
@@ -61,7 +64,7 @@ class Connection:
                                     private_key_pass=self.private_key_pass,
                                     cnopts=cnopts)
         except Exception as ex:
-            logger.exception(f'Failed to connect to server {ex}')
+            ex_log(f'Failed to connect to server {ex}')
             return False
         else:
             return sftp

@@ -1,7 +1,7 @@
 from threading import Thread
 import os
 import stat
-from common_funcs import confirm_popup, mk_logger
+from common import confirm_popup, mk_logger
 from threads.download import Download
 
 logger = mk_logger(__name__)

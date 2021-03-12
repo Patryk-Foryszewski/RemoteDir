@@ -2,7 +2,7 @@ from threading import Thread
 import os
 from threads.download import Download
 from kivy.clock import Clock
-from common_funcs import mk_logger
+from common import mk_logger
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',

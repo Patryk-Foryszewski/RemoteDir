@@ -2,8 +2,7 @@ from kivy.uix.stacklayout import StackLayout
 from kivy.graphics import Color, Rectangle
 from kivy.properties import ObjectProperty
 from kivy.core.window import Window
-from common_funcs import confirm_popup, menu_popup, posix_path, is_file, mk_logger, thumbnail_popup, file_ext
-from common_vars import hidden_files
+from common import confirm_popup, menu_popup, posix_path, is_file, mk_logger, thumbnail_popup, hidden_files
 import win32clipboard as clipboard
 from filetile import FileTile
 from filedetails import FileDetails
@@ -145,6 +144,7 @@ class FilesSpace(StackLayout):
 
         if not self.touched_file:
             self.marked_files.clear()
+            self.on_popup_dismiss()
             for file in self.children:
                 file.focus = False
             if touch.button == 'right':
@@ -285,6 +285,7 @@ class FilesSpace(StackLayout):
         elif option == 'Make dir':
             self.make_dir()
         elif option == 'Rename':
+
             self.touched_file.enable_rename()
         elif option == 'Add Thumbnail':
             self.unbind_external_drop()
@@ -292,6 +293,7 @@ class FilesSpace(StackLayout):
                             destination=self.originator.get_current_path(),
                             filename=self.touched_file.filename,
                             sftp=self.originator.sftp)
+
 
     def bind_external_drop(self):
         Window.bind(on_dropfile=self.external_dropfile)
@@ -487,9 +489,7 @@ class FilesSpace(StackLayout):
         if answer == 'yes':
             self.find_marked_files()
             for file in self.marked_files:
-                removed = self.originator.remove(file)
-                if removed:
-                    self.remove_file(file)
+                self.originator.remove(file)
 
         self.on_popup_dismiss()
         popup.dismiss()
