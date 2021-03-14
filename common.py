@@ -241,24 +241,24 @@ def thumbnail_popup(originator, destination, filename, sftp):
 
 def progress_popup():
     from kivy.clock import Clock
-    from progressrow import ProgressRow
     from kivy.uix.modalview import ModalView
-
+    from progressrow import ProgressRow
     content = ProgressRow()
     popup = ModalView(
-        content=content,
-        size_hint=(None, None),
+        size_hint=(.5, None),
+        height=36,
+        pos_hint={'y': 0, 'x': .5}
     )
+    popup.add_widget(content)
 
     def open_popup(_):
         popup.open()
 
-    Clock.schedule_once(open_popup, 0)
+    Clock.schedule_once(open_popup, 0.1)
     return popup, content
 
 
 def info_popup():
-    print('INFO POPUP')
     from kivy.clock import Clock
     from infolabel import InfoLabel
     from kivy.uix.modalview import ModalView
@@ -396,3 +396,14 @@ def find_thumb(dst_path, filename):
             return pure_windows_path(path_to_thumbnails, thumbnail)
     else:
         return None
+
+
+def thumbnails():
+    config = get_config()
+    # noinspection PyBroadException
+    try:
+        enable_thumbnails = config.getboolean('SETTINGS', 'enable_thumbnails')
+    except Exception:
+        return False
+    else:
+        return enable_thumbnails

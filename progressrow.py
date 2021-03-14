@@ -1,11 +1,15 @@
 from kivy.uix.boxlayout import BoxLayout
+from kivy.properties import ListProperty
 from kivy.clock import Clock
 
 
 class ProgressRow(BoxLayout):
+    progress=ListProperty()
+
     def __init__(self, my_thread=None, **kwargs):
         super().__init__(**kwargs)
         self.my_thread = my_thread
+        self.progress_callback = None
 
     def set_values(self, desc=''):
         self.ids.desc.text = desc
@@ -20,6 +24,7 @@ class ProgressRow(BoxLayout):
         self.my_thread.overwrite()
 
     def update(self, *args):
+        self.progress = args
         progress = float(args[0]/args[1])
         self.ids.progress.width = progress * (self.size[0] - self.ids.percent.size[0])
         self.ids.percent.text = '{}%'.format(int(progress * 100))
@@ -41,3 +46,7 @@ class ProgressRow(BoxLayout):
     def flush(self):
         self.ids.progress.width = 0
         self.ids.percent.text = ''
+
+    def on_progress(self, *args):
+        if self.progress_callback:
+            self.progress_callback(args[1])

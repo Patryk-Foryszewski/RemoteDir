@@ -3,16 +3,12 @@ from kivy.properties import StringProperty, ListProperty
 from kivy.core.window import Window
 from kivy.clock import Clock
 from colors import colors
-from common import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path, find_thumb
+from common import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path, find_thumb, thumbnails
 from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir
-from configparser import ConfigParser
-from filesspace import FilesSpace
-from progressbox import ProgressBox
 from sftp.connection import Connection
 from exceptions import *
 from threads import TransferManager
 from threads.thumbdownload import ThumbDownload
-import stat
 import queue
 import os
 from paramiko.ssh_exception import SSHException
@@ -49,7 +45,7 @@ class RemoteDir(BoxLayout):
         self.childs_to_light = None
         self.files_space = None
         self.progress_box = None
-        self.thumb = True
+        self.thumbnails = thumbnails()
         self.reconnection_tries = 0
         self.callback = None
 
@@ -96,7 +92,7 @@ class RemoteDir(BoxLayout):
         Checks if thumbnails are up to date with the one on remote disk.
         If thumb is not up to date or does not exist download thumbnail from remote.
         """
-        if not self.thumb:
+        if not self.thumbnails:
             return
         remote_thumbs_path = posix_path(self.get_current_path(), thumb_dir)
         # noinspection PyBroadException
@@ -131,19 +127,22 @@ class RemoteDir(BoxLayout):
         except OSError as ose:
             if ose == 'Socket is closed':
                 self.callback = self.list_dir
-                self.connect(password=self.password)
-
+                self.connect()
         except Exception as ex:
             ex_log(f'List dir exception {ex}')
         else:
-            path = self.get_current_path()
-            for attrs in attrs_list:
-                attrs.path = path
+            self.add_attrs(attrs_list)
             self.files_space.fill(attrs_list)
+
+    def add_attrs(self, attrs):
+        _path = self.get_current_path()
+        for attr in attrs:
+            attr.path = _path
+            attr.thumbnail = self.thumbnails
 
     def add_file(self, path, attrs, _):
         if path == self.get_current_path():
-            attrs.path = self.get_current_path()
+            self.add_attrs([attrs])
             self.files_space.add_file(attrs)
 
     def sort_menu(self):
@@ -283,7 +282,7 @@ class RemoteDir(BoxLayout):
         """
         destination = self.get_current_path() if not destination else posix_path(self.get_current_path(), destination)
         local_path = local_path.decode(encoding='UTF-8', errors='strict')
-        task = {'type': 'upload', 'src_path': local_path, 'dst_path': destination}
+        task = {'type': 'upload', 'src_path': local_path, 'dst_path': destination, 'thumbnails': self.thumbnails}
 
         self.execute_sftp_task(task)
 
@@ -353,7 +352,7 @@ class RemoteDir(BoxLayout):
             return attrs
 
     def rename_thumbnail(self, old_name, new_name):
-        if self.thumb:
+        if self.thumbnails:
             from common_vars import find_thumb
             old_local_thumbnail = find_thumb(self.get_current_path(), old_name)
             new_name = f'{new_name}.jpg'

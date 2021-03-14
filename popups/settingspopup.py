@@ -1,5 +1,5 @@
 from kivy.uix.relativelayout import RelativeLayout
-from common import config_file, default_remote, download_path, local_path_exists
+from common import config_file, default_remote, download_path, local_path_exists, thumbnails
 from configparser import ConfigParser
 from kivy.app import App
 
@@ -14,12 +14,14 @@ class SettingsPopup(RelativeLayout):
     def fill(self):
         self.ids.download_path.text = download_path()
         self.ids.default_remote.text = default_remote()
+        self.ids.enable_thumbnails.active = thumbnails()
 
     def save_config(self):
 
         config = ConfigParser()
         download_path = self.ids.download_path.text
         default_remote = self.ids.default_remote.text
+        enable_thumbnails = str(self.ids.enable_thumbnails.active)
         err = False
         if not local_path_exists(download_path):
             self.ids.download_path_err.text = f"Path doesn't exists"
@@ -38,7 +40,7 @@ class SettingsPopup(RelativeLayout):
 
         config.set('SETTINGS', 'download_path', download_path)
         config.set('SETTINGS', 'default_remote', default_remote)
-
+        config.set('SETTINGS', 'enable_thumbnails', enable_thumbnails)
         with open(config_file, 'w') as f:
             config.write(f)
 

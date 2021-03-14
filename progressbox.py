@@ -33,7 +33,7 @@ class ProgressBox(BoxLayout):
 
         def add(_):
             self.ids.bars_space.add_widget(bar, index=len(self.ids.bars_space.children))
-        Clock.schedule_once(add, 0.01)
+        Clock.schedule_once(add, 0)
 
     def show_bars(self, hide=False):
         if hide:

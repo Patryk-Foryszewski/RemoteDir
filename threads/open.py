@@ -2,7 +2,7 @@ from threading import Thread
 import os
 from threads.download import Download
 from kivy.clock import Clock
-from common import mk_logger
+from common import mk_logger, thumbnails, progress_popup
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -27,6 +27,8 @@ class Open(Thread):
         self.check_event = None
         self.file = None
         self.bar = None
+        self.upload_progress = None
+        self.thumbnails = thumbnails()
 
     def run(self):
         logger.info(f'Opening file {self.file_name}')
@@ -61,9 +63,9 @@ class Open(Thread):
     def open(self):
         self.manager.sftp_queue.put(self.sftp)
         self.manager.thread_queue.put('.')
-        self.file = os.system('"{}"'.format(self.dst_path))
         self.get_mtime()
         self.check_event = Clock.schedule_interval(self.is_modified, 1)
+        self.file = os.system('"{}"'.format(self.dst_path))
 
     def get_mtime(self):
         self.m_time = os.stat(self.dst_path).st_mtime
@@ -90,7 +92,19 @@ class Open(Thread):
                     'type': 'upload',
                     'dir': False,
                     'overwrite': True,
+                    'thumbnails': self.thumbnails,
                     'preserve_mtime': True}
 
-        self.manager.put_transfer(transfer)
+        self.upload_progress = self.bar.progress
+        self.bar.progress_callback = self.on_upload_progress
+        self.popup, self.bar_popup = progress_popup()
+        self.bar_popup.set_values(f'Uploading {self.file_name} to {os.path.split(self.dst_path)[1]}')
+        self.manager.put_transfer(transfer, bar=self.bar)
         self.manager.run()
+
+    def on_upload_progress(self, progress):
+        self.bar_popup.update(*progress)
+        if progress[0]/progress[1] == 1:
+            def dismiss_progress_popup(_):
+                self.popup.dismiss()
+            Clock.schedule_once(dismiss_progress_popup, 1)

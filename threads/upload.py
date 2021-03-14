@@ -25,7 +25,7 @@ class Upload(Thread):
         self.done = False
         self.waiting_for_directory = None
         self.attrs = None
-        self.thumb = thumb
+        self.thumbnails = data['thumbnails']
 
     def run(self):
         self.bar.my_thread = self
@@ -63,7 +63,7 @@ class Upload(Thread):
             self.manager.put_transfer({**self.data, 'overwrite': True}, bar=self.bar)
 
         except Exception as ex:
-            ex_log(f'Uploading {self.file_name} unknown exception. {ex}')
+            ex_log(f'Uploading {self.file_name} {type(ex)}. {ex}')
 
         else:
             logger.info(f'Uploading {self.file_name} completed successfully')
@@ -76,7 +76,7 @@ class Upload(Thread):
             self.manager.thread_queue.put('.')
 
     def upload_thumbnail(self):
-        if self.thumb:
+        if self.thumbnails:
             try:
                 th = ThumbnailGenerator(self.src_path, self.dst_path)
                 th.start()
@@ -91,7 +91,6 @@ class Upload(Thread):
                         logger.info(f'Thumbnail for {self.file_name} not uploaded')
             except Exception as ex:
                 ex_log(f'Failed to upload thumbnail for {self.file_name}. {ex}')
-
 
     def file_exists(self):
         if self.sftp.exists(self.full_remote_path):

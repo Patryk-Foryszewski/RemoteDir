@@ -23,6 +23,7 @@ class Download(Thread):
         self.preserve_mtime = preserve_mtime
         self.done = False
         self.waiting_for_directory = None
+        self.callback = None
 
     def run(self):
         logger.info(f'Downloading {self.filename}')

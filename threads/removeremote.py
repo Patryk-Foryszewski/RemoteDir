@@ -15,7 +15,6 @@ ex_log = ex_log.exception
 class RemoveRemoteDirectory(Thread):
     def __init__(self, manager, sftp, data):
         super().__init__()
-        print('RemoveRemoteDirectory', data)
         self.remote_path = data['remote_path']
         self.sftp = sftp
         self.on_remove = data['on_remove']
@@ -54,7 +53,9 @@ class RemoveRemoteDirectory(Thread):
             self.error(ex)
         else:
             self.info(path.split(_path)[1])
-            self.on_remove()
+            if _path == self.remote_path:
+                self.on_remove()
+
 
     def forbidden(self, filename):
         if filename in forbidden_names:

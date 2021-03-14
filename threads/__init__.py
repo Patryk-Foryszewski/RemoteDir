@@ -109,7 +109,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.transfers_event.cancel()
         self.transfers_event = None
 
-    def reconnect(self, _):
+    def reconnect(self, _=None):
         sftp = self.connect()
         if sftp:
             self.sftp_queue.put(sftp)

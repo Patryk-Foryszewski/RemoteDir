@@ -11,6 +11,8 @@ from kivy.lang.builder import Builder
 from remotedir import RemoteDir
 from kivy.factory import Factory
 from adjustabletextinput import AdjustableTextInput
+from progressbox import ProgressBox
+from filesspace import FilesSpace
 import os
 
 logger = mk_logger(__name__)
@@ -33,5 +35,8 @@ class Main(App):
 
 
 if __name__ == '__main__':
+    Factory.register('RemoteDir', cls=RemoteDir)
     Factory.register('AdjustableTextInput', cls=AdjustableTextInput)
+    Factory.register('FilesSpace', cls=FilesSpace)
+    Factory.register('ProgressBox', cls=ProgressBox)
     Main().run()
