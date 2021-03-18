@@ -1,0 +1,13 @@
+<ThreeStateCheckbox>
+    size_hint: None, None
+    size: 20, 20
+    canvas.before:
+        Color:
+            rgba: (0,0,0,1)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    Image:
+        size_hint: None, None
+        size: 20, 20
+        source: root.image

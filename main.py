@@ -11,6 +11,7 @@ from kivy.lang.builder import Builder
 from remotedir import RemoteDir
 from kivy.factory import Factory
 from adjustabletextinput import AdjustableTextInput
+from threestatecheckbox import ThreeStateCheckbox
 from progressbox import ProgressBox
 from filesspace import FilesSpace
 import os
@@ -39,4 +40,5 @@ if __name__ == '__main__':
     Factory.register('AdjustableTextInput', cls=AdjustableTextInput)
     Factory.register('FilesSpace', cls=FilesSpace)
     Factory.register('ProgressBox', cls=ProgressBox)
+    Factory.register('ThreeStateCheckbox', cls=ThreeStateCheckbox)
     Main().run()

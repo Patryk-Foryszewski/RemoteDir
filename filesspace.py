@@ -264,7 +264,7 @@ class FilesSpace(StackLayout):
             self.find_marked_files()
 
             if len(self.marked_files) == 1:
-                buttons = ['Rename', 'Download', 'Open', 'Delete']
+                buttons = ['Rename', 'Download', 'Open', 'Delete', 'File attributes']
                 if self.thumb:
                     buttons.append('Add Thumbnail')
 
@@ -300,7 +300,9 @@ class FilesSpace(StackLayout):
                             destination=self.originator.get_current_path(),
                             filename=self.touched_file.filename,
                             sftp=self.originator.sftp)
-
+        elif option == 'File attributes':
+            from popups.chmodpopup import ChmodPopup
+            ChmodPopup(attrs=self.touched_file.attrs, on_dismiss=self.on_popup_dismiss, on_popup=self.on_popup)
 
     def bind_external_drop(self):
         Window.bind(on_dropfile=self.external_dropfile)
@@ -472,7 +474,7 @@ class FilesSpace(StackLayout):
     def on_popup(self):
         self.originator.mouse_locked = True
 
-    def on_popup_dismiss(self):
+    def on_popup_dismiss(self, *_):
         self.originator.mouse_locked = False
 
     def remove_popup(self):
