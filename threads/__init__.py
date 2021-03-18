@@ -13,6 +13,7 @@ from threads.upload import Upload
 from threads.remotewalk import RemoteWalk
 from threads.mkremotedirs import MkRemoteDirs
 from threads.removeremote import RemoveRemoteDirectory
+from threads.thumbdownload import ThumbDownload
 from weakref import WeakValueDictionary
 import os
 import stat
@@ -97,6 +98,9 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                 self.transfers.put({**task})
 
             elif task['type'] == 'remove_remote':
+                self.transfers.put({**task})
+
+            elif task['type'] == 'thumbdownload':
                 self.transfers.put({**task})
 
     def start_transfers(self):
@@ -211,6 +215,9 @@ class TransferManager(Thread, metaclass=SingletonMeta):
             elif transfer['type'] == 'remove_remote':
                 thread = RemoveRemoteDirectory(manager=self, sftp=sftp, data=transfer)
 
+            elif transfer['type'] == 'thumbdownload':
+                thread = ThumbDownload(manager=self, sftp=sftp, data=transfer)
+
             if thread:
                 self.threads.append(thread)
                 thread.start()
@@ -266,13 +273,25 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                 self.put_transfer({'type': 'upload',
                                    'dir': False,
                                    'src_path': pure_windows_path(root, file),
-                                   'dst_path': relative_path})
-            if dirs:
-                self.put_transfer({'type': 'upload',
-                                   'dir': True,
                                    'dst_path': relative_path,
-                                   'name': dirs})
-        self.put_transfer({'type': 'upload', 'dir': True, 'dst_path': dst_path, 'name': [dir_to_walk]})
+                                   'thumbnails': task['thumbnails']})
+            if dirs:
+                empty_dirs = []
+                for _dir in dirs:
+                    if not len(os.listdir(pure_windows_path(root, _dir))):
+                        empty_dirs.append(_dir)
+                if empty_dirs:
+                    self.put_transfer({'type': 'upload',
+                                       'dir': True,
+                                       'dst_path': relative_path,
+                                       'name': empty_dirs,
+                                       'thumbnails': task['thumbnails']})
+
+        self.put_transfer({'type': 'upload',
+                           'dir': True,
+                           'dst_path': dst_path,
+                           'name': [dir_to_walk],
+                           'thumbnails': task['thumbnails']})
 
     def uploaded(self, path, attrs):
         Clock.schedule_once(partial(self.originator.add_file, path, attrs), 0.01)

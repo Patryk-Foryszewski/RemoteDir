@@ -17,24 +17,30 @@ from kivy.app import App
 class CredentialsPopup(RelativeLayout):
     auto_dismiss = False
 
-    def __init__(self, callback=None, errors=None):
+    def __init__(self, callback=None, errors=None, auto_dismiss=False):
         super().__init__()
         self.bind_external_drop()
         self.callback = callback
         self.show_errors(errors)
+        self.auto_dismiss = auto_dismiss
         self.dismissed = False
         self.fill()
         self.path = None
         self.inputs = None
+        self.originator = None
 
-    def show_errors(self, errors):
-        if errors:
+    def show_errors(self, errors_dict):
+        if errors_dict:
+            errors = errors_dict.get('errors')
+            self.ids.message.text = errors_dict['message']
             if 'server' in errors:
                 self.ids.server_err.text = 'Type correct server name or IP'
             if 'user' in errors:
                 self.ids.user_err.text = 'Type correct username'
             if 'password' in errors:
                 self.ids.password_err.text = 'Type correct password'
+            if 'private_key' in errors:
+                self.ids.private_key_err.text = 'Drop correct key file or type password'
 
         else:
             self.ids.password_err.text = ''
@@ -107,7 +113,7 @@ class CredentialsPopup(RelativeLayout):
             return False
 
     def on_dropfile(self, _, path):
-        print('DROPPED FILE', path)
+
         if self.dismissed:
             return
         self.path = path.decode(encoding='UTF-8', errors='strict')
@@ -116,10 +122,8 @@ class CredentialsPopup(RelativeLayout):
                 text = f.readlines()
 
         except Exception as ex:
-            print('READ ERROR', ex)
             self.ids.private_key_err.text = 'Failed to read private key file'
         else:
-            print('Credentials', text)
             if text[0].split()[1] == 'ssh-rsa':
                 print('ELO')
 
@@ -176,6 +180,9 @@ class CredentialsPopup(RelativeLayout):
         #decrypted = f.encrypt(config)
         #with open('config.ini', 'wb') as config:
         #    config.write(decrypted)
+
+    def dismiss(self):
+        self.originator.dismiss()
 
     def on_connect(self):
         return

@@ -4,14 +4,15 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from colors import colors
 from common import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path, find_thumb, thumbnails
-from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir
+from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir, thumbnail_ext
+
 from sftp.connection import Connection
 from exceptions import *
 from threads import TransferManager
 from threads.thumbdownload import ThumbDownload
 import queue
 import os
-from paramiko.ssh_exception import SSHException
+from paramiko.ssh_exception import SSHException, AuthenticationException, BadAuthenticationType
 import copy
 from functools import partial
 
@@ -33,7 +34,6 @@ class RemoteDir(BoxLayout):
         self.mouse_locked = False
         self.password = None
         self.sftp = None
-        self.connect()
         self.current_path = default_remote()
         self.marked_files = set()
         self.files_queue = queue.LifoQueue()
@@ -49,6 +49,7 @@ class RemoteDir(BoxLayout):
         self.reconnection_tries = 0
         self.callback = None
 
+
     def on_kv_post(self, base_widget):
         self.childs_to_light = [self.ids.current_path, self.ids.search, self.ids.settings,
                                 self.ids.sort_menu, self.ids.sort_files_up, self.ids.sort_files_down,
@@ -56,6 +57,7 @@ class RemoteDir(BoxLayout):
 
         self.files_space = self.ids.files_space
         self.progress_box = self.ids.progress_box
+        self.connect()
 
     def on_mouse_move(self, _, mouse_pos):
         if not self.mouse_locked:
@@ -103,9 +105,10 @@ class RemoteDir(BoxLayout):
 
         downloads = []
         for file in remote_attrs:
-            thumb_path = find_thumb(self.get_current_path(), file.filename)
+            _file_name = '.'.join(file.filename.split('.')[:-1])
+            thumb_path = find_thumb(self.get_current_path(), _file_name)
             if thumb_path:
-                local_attrs = os.lstat(find_thumb(self.get_current_path(), file.filename))
+                local_attrs = os.lstat(thumb_path)
                 if file.st_mtime != local_attrs.st_mtime:
                     downloads.append(file.filename)
 
@@ -113,15 +116,18 @@ class RemoteDir(BoxLayout):
                 downloads.append(file.filename)
 
         if downloads:
-            src = posix_path(self.get_current_path(), thumb_dir)
-            td = ThumbDownload(src, downloads, self.get_current_path(), self.sftp, self.files_space.refresh_thumbnail)
-            td.start()
-            td.join()
+            src_path = posix_path(self.get_current_path(), thumb_dir)
+            task = {'type': 'thumbdownload',
+                    'src_path': src_path,
+                    'dst_path': self.get_current_path(),
+                    'thumbnails': downloads,
+                    'callback': self.files_space.refresh_thumbnails}
+            self.execute_sftp_task(task)
 
     def list_dir(self):
         # print('DIRS', self.sftp.listdir_attr())
         self.compare_thumbs()
-
+        #popup, content = info_popup(f'Listing {file_name(self.get_current_path())} directory')
         try:
             attrs_list = self.sftp.listdir_attr()
         except OSError as ose:
@@ -129,8 +135,11 @@ class RemoteDir(BoxLayout):
                 self.callback = self.list_dir
                 self.connect()
         except Exception as ex:
+            #content.text = f'List dir exception {ex}'
             ex_log(f'List dir exception {ex}')
+
         else:
+            #popup.dismiss()
             self.add_attrs(attrs_list)
             self.files_space.fill(attrs_list)
 
@@ -185,6 +194,7 @@ class RemoteDir(BoxLayout):
                    widget=self.ids.file_size)
 
     def connect(self, popup=None, password=None):
+        self.files_space.unbind_external_drop()
         if popup:
             popup.dismiss()
 
@@ -211,11 +221,32 @@ class RemoteDir(BoxLayout):
             self.connection.hostkeys.connect = self.connect
             self.connection.hostkeys.hostkey_popup(me.message)
             return False
+
+        except BadAuthenticationType as bat:
+            ex_log(f'Authentication exception, {str(bat)}')
+            credential_popup(callback=self.connect, errors={'errors': '',
+                                                            'message': f'{str(bat)}'})
+
+        except AuthenticationException as ae:
+            ex_log(f'Authentication exception, {str(ae)}')
+            credential_popup(callback=self.connect, errors={'errors': '',
+                                                            'message': f'{str(ae)}'})
+
         except SSHException as she:
             ex_log(f'Connection exception, {she}')
-            self.reconnect()
+            if 'not a valid' in str(she):
+                credential_popup(callback=self.connect, errors={'errors': ['private_key'],
+                                                                'message': f'{str(she)[0].upper()}{str(she)[1:]}'})
+            else:
+                self.reconnect()
+
+        except FileNotFoundError:
+            credential_popup(callback=self.connect, errors={'errors': ['private_key'],
+                                                            'message': 'Private key file doesn\'t exist'})
+
         except Exception as ex:
             ex_log(f'Unknown connection exception, {ex}')
+
         else:
             self.sftp = self.connection.sftp
             if not self.sftp:
@@ -226,6 +257,7 @@ class RemoteDir(BoxLayout):
             self.chdir(self.current_path)
             self.get_base_path()
             self.do_callback()
+            self.files_space.bind_external_drop()
             return True
 
     def do_callback(self):
@@ -282,7 +314,10 @@ class RemoteDir(BoxLayout):
         """
         destination = self.get_current_path() if not destination else posix_path(self.get_current_path(), destination)
         local_path = local_path.decode(encoding='UTF-8', errors='strict')
-        task = {'type': 'upload', 'src_path': local_path, 'dst_path': destination, 'thumbnails': self.thumbnails}
+        task = {'type': 'upload',
+                'src_path': local_path,
+                'dst_path': destination,
+                'thumbnails': self.thumbnails}
 
         self.execute_sftp_task(task)
 
@@ -310,7 +345,7 @@ class RemoteDir(BoxLayout):
     def choice(self, choice):
         self.on_popup_dismiss()
         if choice == 'Credentials':
-            credential_popup()
+            credential_popup(auto_dismiss=True)
         if choice == 'Settings':
             settings_popup()
 
@@ -355,8 +390,8 @@ class RemoteDir(BoxLayout):
         if self.thumbnails:
             from common_vars import find_thumb
             old_local_thumbnail = find_thumb(self.get_current_path(), old_name)
-            new_name = f'{new_name}.jpg'
-            old_name = f'{old_name}.jpg'
+            new_name = f'{new_name}.{thumbnail_ext}'
+            old_name = f'{old_name}.{thumbnail_ext}'
             if old_local_thumbnail:
                 new_local_thumbnail = os.path.join(os.path.split(old_local_thumbnail)[0], new_name)
                 try:
@@ -389,6 +424,7 @@ class RemoteDir(BoxLayout):
                     self.files_space.remove_file(file)
                 else:
                     attrs = self.get_file_attrs(new_path)
+                    self.add_attrs([attrs])
                     if attrs:
                         file.attrs = copy.deepcopy(attrs)
                         file.filename = attrs.filename

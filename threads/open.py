@@ -29,6 +29,8 @@ class Open(Thread):
         self.bar = None
         self.upload_progress = None
         self.thumbnails = thumbnails()
+        self.popup = None
+        self.bar_popup = None
 
     def run(self):
         logger.info(f'Opening file {self.file_name}')
@@ -65,7 +67,13 @@ class Open(Thread):
         self.manager.thread_queue.put('.')
         self.get_mtime()
         self.check_event = Clock.schedule_interval(self.is_modified, 1)
-        self.file = os.system('"{}"'.format(self.dst_path))
+        self.open_file()
+
+    def open_file(self):
+        try:
+            self.file = os.system('"{}"'.format(self.dst_path))
+        except Exception as ex:
+            ex_log(f'Failed to open file {self.file_name}, {ex}')
 
     def get_mtime(self):
         self.m_time = os.stat(self.dst_path).st_mtime

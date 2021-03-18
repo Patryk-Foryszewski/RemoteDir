@@ -26,7 +26,7 @@ button_height = 20
 hidden_files = [thumb_dir]
 forbidden_names = [thumb_dir]
 img_extensions = ('.jpg', 'jpeg', '.png')
-thumbnail_ext = 'png'
+thumbnail_ext = 'jpg'
 
 
 def mk_logger(name, level=None, _format=None):
@@ -164,7 +164,7 @@ def settings_popup(title='Settings'):
     Clock.schedule_once(open_popup, .1)
 
 
-def credential_popup(callback=None, title='Credentials', errors=None):
+def credential_popup(callback=None, title='Credentials', errors=None, auto_dismiss=False):
     from kivy.uix.popup import Popup
     from popups.credentialspopup import CredentialsPopup
     from kivy.clock import Clock
@@ -174,7 +174,8 @@ def credential_popup(callback=None, title='Credentials', errors=None):
         popup = Popup(title=title,
                       content=content,
                       size_hint=(None, .8),
-                      width=600)
+                      width=600,
+                      auto_dismiss=auto_dismiss)
 
         content.originator = popup
         popup.open()
@@ -258,11 +259,11 @@ def progress_popup():
     return popup, content
 
 
-def info_popup():
+def info_popup(text=''):
     from kivy.clock import Clock
     from infolabel import InfoLabel
     from kivy.uix.modalview import ModalView
-    content = InfoLabel()
+    content = InfoLabel(text)
     popup = ModalView(
         size_hint=(.5, None),
         height=20,
@@ -342,7 +343,7 @@ def file_ext(name):
 
 def thumb_name(src_path):
     name = os.path.split(src_path)[1]
-    return f'{name}.jpg'
+    return f'{name}.{thumbnail_ext}'
 
 
 def default_remote():
@@ -389,8 +390,8 @@ def find_thumb(dst_path, filename):
 
     if not path.exists(path_to_thumbnails):
         return None
-    thumbnails = listdir(path_to_thumbnails)
-    for thumbnail in thumbnails:
+    _thumbnails = listdir(path_to_thumbnails)
+    for thumbnail in _thumbnails:
         _thumbnail = '.'.join(thumbnail.split('.')[0: -1])
         if _thumbnail == filename:
             return pure_windows_path(path_to_thumbnails, thumbnail)
@@ -407,3 +408,7 @@ def thumbnails():
         return False
     else:
         return enable_thumbnails
+
+
+def file_name(_path):
+    return path.split(_path)[1]

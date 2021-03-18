@@ -69,12 +69,19 @@ class FilesSpace(StackLayout):
                 self.remove_widget(file)
                 self.attrs_list.remove(file.attrs)
                 break
+
         self.attrs_list.append(attrs)
         self.add_icon(attrs)
 
+    def refresh_thumbnails(self):
+        for file in self.children:
+            file.set_thumbnail()
+
     def refresh_thumbnail(self, name):
+
         for file in self.children:
             if file.filename == name:
+                print('REFRESH THUMBNAIL', name)
                 file.set_thumbnail()
                 break
 

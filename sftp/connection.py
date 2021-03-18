@@ -39,7 +39,8 @@ class Connection:
 
     def validate_config(self):
         if not self.password and not self.private_key:
-            raise InvalidConfig(errors=['password', 'private_key'])
+            raise InvalidConfig(errors={'errors': ['password', 'private_key'],
+                                        'message': 'Type password or drop a private key file'})
 
     def server_auth(self):
         self.hostkeys = HostKeyManager(self.server, self.port)
@@ -50,24 +51,20 @@ class Connection:
         private_key = credentials.ids.private_key.text
         self.password = password if password else None
         self.private_key = private_key if private_key else None
-        credentials.originator.dismiss()
+        credentials.dismiss()
         self.start()
 
     def connect(self):
         cnopts = pysftp.CnOpts(my_knownhosts)
-        try:
-            sftp = pysftp.Connection(
-                                    host=self.server,
-                                    username=self.user,
-                                    password=self.password,
-                                    private_key=self.private_key,
-                                    private_key_pass=self.private_key_pass,
-                                    cnopts=cnopts)
-        except Exception as ex:
-            ex_log(f'Failed to connect to server {ex}')
-            return False
-        else:
-            return sftp
+        sftp = pysftp.Connection(
+                                host=self.server,
+                                username=self.user,
+                                password=self.password,
+                                private_key=self.private_key,
+                                private_key_pass=self.private_key_pass,
+                                cnopts=cnopts)
+
+        return sftp
 
     def close(self):
         self.sftp.close()

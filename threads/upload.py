@@ -11,7 +11,7 @@ ex_log = ex_log.exception
 
 
 class Upload(Thread):
-    def __init__(self, data, manager, bar, sftp, preserve_mtime=False, thumb=True):
+    def __init__(self, data, manager, bar, sftp, preserve_mtime=False):
         super().__init__()
         self.data = data
         self.dst_path = data['dst_path']
@@ -109,12 +109,13 @@ class Upload(Thread):
         self.attrs.longname = str(self.attrs)
 
     def thumb_dir_exists(self):
+        thdr = None
         try:
             thdr = posix_path(self.dst_path, thumb_dir)
             if not self.sftp.exists(thdr):
                 self.sftp.makedirs(thdr)
         except Exception as ex:
-            ex_log(f'Failed to make thumbnail directory {ex}')
+            ex_log(f'Failed to make thumbnail directory {thdr}, {ex}')
             return False
         else:
             return True

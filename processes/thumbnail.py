@@ -31,7 +31,7 @@ class ThumbnailGenerator(Thread):
             self.generate_thumbnail()
 
     def generate_thumbnail(self):
-
+        print('SAVE THUMB AS', self.thumb_path)
         ext = file_ext(self.src_path)
 
         if ext in ('.pdf', '.svg'):
@@ -47,6 +47,7 @@ class ThumbnailGenerator(Thread):
         try:
             im = Image.open(self.src_path)
             im.thumbnail(self.size)
+            im = im.convert('RGB')
             im.save(self.thumb_path)
         except UnidentifiedImageError:
             pass
@@ -75,6 +76,7 @@ class ThumbnailGenerator(Thread):
         from rawpy._rawpy import LibRawNoThumbnailError
         from rawpy._rawpy import LibRawUnsupportedThumbnailError
         from rawpy._rawpy import LibRawIOError
+        from rawpy._rawpy import LibRawFileUnsupportedError
 
         try:
             with rawpy.imread(self.src_path) as raw:
@@ -92,8 +94,11 @@ class ThumbnailGenerator(Thread):
             pass
         except LibRawUnsupportedThumbnailError:
             pass
+        except LibRawFileUnsupportedError:
+            pass
         except LibRawIOError:
             pass
+
         except Exception as ex:
             ex_log(f'Failed to make a thumbnail {ex}')
         else:
@@ -103,5 +108,3 @@ class ThumbnailGenerator(Thread):
             logger.info(f'Thumbnail {self.thumb_name} created with rawpy')
             self.ok = True
             return
-
-
