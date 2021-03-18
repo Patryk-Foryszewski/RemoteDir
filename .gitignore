@@ -1,7 +1,6 @@
 .idea
 sandbox.py
 __pycache__
-credentialspopup.kv
 certificate.crt
 privatekey.key
 SSH
