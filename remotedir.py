@@ -307,6 +307,32 @@ class RemoteDir(BoxLayout):
         task = {'type': 'download', 'src_path': src_path, 'dst_path': download_path(), 'attrs': file.attrs}
         self.execute_sftp_task(task)
 
+    def chmod(self, file, mode=None, popup=None):
+
+        if not mode:
+            from popups.chmodpopup import ChmodPopup
+            ChmodPopup(file=file,
+                       on_save=self.chmod,
+                       on_popup=self.on_popup,
+                       on_dismiss=self.on_popup_dismiss)
+
+        else:
+            if file.file_type == 'dir':
+                path = file.attrs.path
+            else:
+                path = posix_path(file.attrs.path, file.filename)
+
+            try:
+                self.sftp.chmod(path, mode)
+                attrs = get_dir_attrs(path, self.sftp)
+            except Exception as ex:
+                ex_log(f'Failed to change file mode {ex}')
+            else:
+                self.add_attrs([attrs])
+                file.attrs = attrs
+                logger.info('File mode changed successfully')
+                popup.dismiss()
+
     def external_dropfile(self, local_path, destination):
         """
         When file is dropped from Windows.
@@ -349,7 +375,8 @@ class RemoteDir(BoxLayout):
         if choice == 'Settings':
             settings_popup()
 
-    def on_popup(self):
+    def on_popup(self, *_):
+        print('ON POPUP')
         self.mouse_locked = True
 
     def remove_from_view(self, file):
@@ -497,7 +524,8 @@ class RemoteDir(BoxLayout):
     def transfer_stop(self):
         self.progress_box.transfer_stop()
 
-    def on_popup_dismiss(self):
+    def on_popup_dismiss(self, *_):
+        print('ON POPUP DISMISS')
         self.mouse_locked = False
 
     def chdir(self, path):
@@ -510,6 +538,8 @@ class RemoteDir(BoxLayout):
                 self.chdir(self.current_path)
             elif str(ie) == 'Socket is closed':
                 self.reconnect()
+            elif ie.errno == 13: # Permission denied
+                logger.warning('Could not list directory. Permission denied. ')
         except Exception as ex:
             ex_log(f'Failed to change dir {ex}')
             self.reconnect()

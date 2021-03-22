@@ -301,8 +301,7 @@ class FilesSpace(StackLayout):
                             filename=self.touched_file.filename,
                             sftp=self.originator.sftp)
         elif option == 'File attributes':
-            from popups.chmodpopup import ChmodPopup
-            ChmodPopup(attrs=self.touched_file.attrs, on_dismiss=self.on_popup_dismiss, on_popup=self.on_popup)
+            self.originator.chmod(file=self.touched_file)
 
     def bind_external_drop(self):
         Window.bind(on_dropfile=self.external_dropfile)

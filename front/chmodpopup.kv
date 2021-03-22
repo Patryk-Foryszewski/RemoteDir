@@ -15,6 +15,7 @@
             id: checkbox
             pos_hint: {'center_x': .5}
             state: root.state
+            on_state_change: root.state = self.state
 
 
 <ChmodPopup>
@@ -37,19 +38,18 @@
         Label:
             id: numeric_value_lbl
             size_hint_x: None
-
             def_text: 'Numeric value:'
             text: self.def_text if not root.value_error else root.value_error
-            #text_size: self.size
             halign: 'left'
             color: app.font_color if not root.value_error else (1, 0, 0, 1)
 
         TextInput:
+            id: numeric_value_txt
             size_hint_x: None
             width: 80
             text: root.mode
-            id: numeric_input
-            on_text: print(root.value_error), root.change_mode(self.text)
+
+            on_text: root.change_mode(self.text)
         BoxLayout:
     Label:
         text: 'Owner'
@@ -61,13 +61,18 @@
         AttrLayout:
             id: owner_read
             attribute: 'Read'
-
+            state: root.owner_read
+            on_state: root.owner_read = self.state
         AttrLayout:
             id: owner_write
             attribute: 'Write'
+            state: root.owner_write
+            on_state:  root.owner_write = self.state
         AttrLayout:
             id: owner_execute
             attribute: 'Execute'
+            state: root.owner_execute
+            on_state:  root.owner_execute = self.state
 
     Label:
         text: 'Group'
@@ -79,13 +84,19 @@
         AttrLayout:
             id: group_read
             attribute: 'Read'
-
+            state: root.group_read
+            on_state:  root.group_read = self.state
         AttrLayout:
             id: group_write
             attribute: 'Write'
+            state: root.group_write
+            on_state:  root.group_write = self.state
         AttrLayout:
             id: group_execute
             attribute: 'Execute'
+            state: root.group_execute
+            on_state:  root.group_execute = self.state
+
 
     Label:
         text: 'Others'
@@ -97,13 +108,27 @@
         AttrLayout:
             id: other_read
             attribute: 'Read'
+            state: root.other_read
+            on_state:  root.other_read = self.state
 
         AttrLayout:
             id: other_write
             attribute: 'Write'
+            state: root.other_write
+            on_state:  root.other_write = self.state
         AttrLayout:
             id: other_execute
             attribute: 'Execute'
+            state: root.other_execute
+            on_state:  root.other_execute = self.state
+    RelativeLayout:
+        size_hint_y: None
+        height: 20
+        Button:
+            id: save_btn
+            pos_hint: {'center_x': .5}
+            text: 'Save'
+            on_press: root.save()
 
     BoxLayout:
 

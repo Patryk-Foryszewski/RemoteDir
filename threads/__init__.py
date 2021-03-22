@@ -110,8 +110,9 @@ class TransferManager(Thread, metaclass=SingletonMeta):
     def stop_transfers(self, cause=None):
         cause = cause if cause else ''
         logger.info(f'Thread manager stop. {cause}')
-        self.transfers_event.cancel()
-        self.transfers_event = None
+        if self.transfers_event:
+            self.transfers_event.cancel()
+            self.transfers_event = None
 
     def reconnect(self, _=None):
         sftp = self.connect()

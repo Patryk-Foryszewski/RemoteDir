@@ -14,8 +14,10 @@ class ProgressRow(BoxLayout):
     def set_values(self, desc=''):
         self.ids.desc.text = desc
 
-    def file_exists_error(self):
+    def file_exists_error(self, text=None):
         self.ids.actions.height = 20
+        if text:
+            self.set_values(text)
 
     def hide_actions(self):
         self.ids.actions.height = 0

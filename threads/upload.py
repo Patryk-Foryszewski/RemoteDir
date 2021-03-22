@@ -46,8 +46,9 @@ class Upload(Thread):
             self.bar.set_values(desc=f'File {self.file_name} does\'t exists')
 
         except FileExistsError:
-            logger.info(f'File {self.file_name} exists')
-            self.bar.file_exists_error()
+            text = f'File {self.full_remote_path} already exists'
+            logger.info(text)
+            self.bar.file_exists_error(text=text)
 
         except IOError as io:
             ex_log(f'Uploading {self.file_name} exception. {io}')
