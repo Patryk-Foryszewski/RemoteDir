@@ -1,4 +1,3 @@
-
 <RemoteDir>
     orientation: 'vertical'
     bcolor: app.active_window_color
@@ -43,6 +42,7 @@
                 width: 140
                 multiline: False
                 hint_text: 'Search:'
+                on_text_validate: root.search(self.text)
 
             Image:
                 id: settings

@@ -1,11 +1,11 @@
 <MenuPopupBtn>
     size_hint: None, None
-    background_color: app.unactive_bcolor
-    height:20
+    background_color: app.context_menu_normal_btn
+    height: 20
     color: 0,0,0,1
 
 <MenuPopup>
-    background_color: 0,0,0,0
+    background_color: (0, 0, 0, 0)
     ScrollView:
         id: scroll
         bar_width: 3
@@ -17,9 +17,10 @@
         BoxLayout:
             id: buttons_space
             orientation: 'vertical'
+            spacing: root.spacing
             canvas.before:
                 Color:
-                    rgba: app.unactive_bcolor
+                    rgba: app.context_menu
                 Rectangle:
                     pos: self.pos
                     size: self.size

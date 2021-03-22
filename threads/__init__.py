@@ -14,6 +14,7 @@ from threads.remotewalk import RemoteWalk
 from threads.mkremotedirs import MkRemoteDirs
 from threads.removeremote import RemoveRemoteDirectory
 from threads.thumbdownload import ThumbDownload
+from threads.remotesftpsearch import RemoteSftpSearch
 from weakref import WeakValueDictionary
 import os
 import stat
@@ -73,6 +74,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.progress_box_shown = False
         self.progress_box.manager = self
         self.transfers_event = None
+        self.progress_box.set_manager(self)
         for _ in range(self.max_connections):
             self.thread_queue.put('.')
 
@@ -101,6 +103,9 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                 self.transfers.put({**task})
 
             elif task['type'] == 'thumbdownload':
+                self.transfers.put({**task})
+
+            elif task['type'] == 'search':
                 self.transfers.put({**task})
 
     def start_transfers(self):
@@ -218,6 +223,9 @@ class TransferManager(Thread, metaclass=SingletonMeta):
 
             elif transfer['type'] == 'thumbdownload':
                 thread = ThumbDownload(manager=self, sftp=sftp, data=transfer)
+
+            elif transfer['type'] == 'search':
+                thread = RemoteSftpSearch(manager=self, sftp=sftp, data=transfer)
 
             if thread:
                 self.threads.append(thread)

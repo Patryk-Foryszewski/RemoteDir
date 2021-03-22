@@ -222,7 +222,7 @@ def menu_popup(originator, buttons, callback, widget=None, mouse_pos=None):
     Clock.schedule_once(open_popup, .1)
 
 
-def thumbnail_popup(originator, destination, filename, sftp):
+def thumbnail_popup(originator, destination, filename, sftp, on_popup, on_popup_dismiss):
     from kivy.uix.popup import Popup
     from popups.thumbnailpopup import ThumbnailPopup
     from kivy.clock import Clock
@@ -235,6 +235,8 @@ def thumbnail_popup(originator, destination, filename, sftp):
             content=content,
             size_hint=(0.7, 0.7))
         content.popup = popup
+        popup.bind(on_dismiss=on_popup_dismiss)
+        on_popup()
         popup.open()
 
     Clock.schedule_once(open_popup, .1)
@@ -263,12 +265,14 @@ def info_popup(text=''):
     from kivy.clock import Clock
     from infolabel import InfoLabel
     from kivy.uix.modalview import ModalView
-    content = InfoLabel(text)
+
     popup = ModalView(
         size_hint=(.5, None),
         height=20,
-        pos_hint={'y': 0, 'x': .5}
+        pos_hint={'y': 0, 'x': .5},
+        background_color=(0, 0, 0, 0)
     )
+    content = InfoLabel(text, popup)
     popup.add_widget(content)
 
     def open_popup(_):

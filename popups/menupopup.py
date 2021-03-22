@@ -1,15 +1,14 @@
 from kivy.uix.button import Button
-from kivy.core.window import Window
 from kivy.uix.modalview import ModalView
 from common import button_height
-from kivy.clock import Clock
 from kivy.core.window import Window
 from colors import colors
+from kivy.properties import NumericProperty
 
 
 class MenuPopupBtn(Button):
 
-    def __init__(self,menupopup, callback=None, **kwargs):
+    def __init__(self, menupopup, callback=None, **kwargs):
         super(MenuPopupBtn, self).__init__(**kwargs)
         self.bind(on_touch_down=self.pressed)
         self.callback = callback
@@ -17,14 +16,12 @@ class MenuPopupBtn(Button):
         self.width = self.menupopup.width
         Window.bind(mouse_pos=self.light_up)
 
-
-    def light_up(self, window, mouse_pos):
+    def light_up(self, _, mouse_pos):
         x, y = self.to_widget(*mouse_pos)
         if self.collide_point(x, y):
-            self.background_color = colors['active_bcolor']
+            self.background_color = colors['context_menu_active_btn']
         else:
-            self.background_color = colors['unactive_bcolor']
-
+            self.background_color = colors['context_menu_normal_btn']
 
     def pressed(self, *args):
         if self.callback and args[1].button == 'left' and self.collide_point(*args[1].pos):
@@ -33,7 +30,9 @@ class MenuPopupBtn(Button):
 
 
 class MenuPopup(ModalView):
+    spacing = NumericProperty(1)
     # MenuPopup & ButtonSpace
+
     def __init__(self, buttons, originator, callback=None, widget=None, mouse_pos=None, **kwargs):
         super().__init__(**kwargs)
 
@@ -45,7 +44,6 @@ class MenuPopup(ModalView):
         self.mouse_pos = mouse_pos
         self.set_width()
         self.set_pos_hint()
-
 
     def fill(self):
         for btn in self.buttons:
@@ -92,7 +90,7 @@ class MenuPopup(ModalView):
                 halign = 'right'
 
         window_height = Window.height
-        self.height = len(self.buttons) * button_height
+        self.height = len(self.buttons) * (button_height + self.spacing)
 
         # if menu fits under the widget show under else pop where more space
         space_below = y - self.height
@@ -108,5 +106,4 @@ class MenuPopup(ModalView):
 
         pos_x = pos_x / window_width
         pos_y = pos_y / window_height
-
-        self.pos_hint = {halign:pos_x, valign:pos_y}
+        self.pos_hint = {halign: pos_x, valign: pos_y}

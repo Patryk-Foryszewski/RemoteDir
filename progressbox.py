@@ -30,7 +30,6 @@ class ProgressBox(BoxLayout):
         return ProgressRow()
 
     def add_bar(self, bar):
-
         def add(_):
             self.ids.bars_space.add_widget(bar, index=len(self.ids.bars_space.children))
         Clock.schedule_once(add, 0)
@@ -80,6 +79,9 @@ class ProgressBox(BoxLayout):
         self.show_bars(hide=True)
         self.ids.bars_space.clear_widgets()
         self.height = 0
+
+    def set_manager(self, manager):
+        self.manager = manager
 
     def stop(self):
         self.manager.stop_transfers()

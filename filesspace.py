@@ -165,8 +165,11 @@ class FilesSpace(StackLayout):
                     self.open_file(self.touched_file)
 
             elif 'ctrl' in self.pressed_key:
-
-                self.touched_file.focus = True
+                if self.touched_file in self.marked_files:
+                    self.marked_files.remove(self.touched_file)
+                    self.touched_file.focus = False
+                else:
+                    self.touched_file.focus = True
 
             elif 'shift' in self.pressed_key:
 
@@ -264,7 +267,7 @@ class FilesSpace(StackLayout):
             self.find_marked_files()
 
             if len(self.marked_files) == 1:
-                buttons = ['Rename', 'Download', 'Open', 'Delete', 'File attributes']
+                buttons = ['Rename', 'Download', 'Open', 'Delete', 'File permissions']
                 if self.thumb:
                     buttons.append('Add Thumbnail')
 
@@ -292,15 +295,17 @@ class FilesSpace(StackLayout):
         elif option == 'Make dir':
             self.make_dir()
         elif option == 'Rename':
-
             self.touched_file.enable_rename()
         elif option == 'Add Thumbnail':
             self.unbind_external_drop()
             thumbnail_popup(originator=self,
                             destination=self.originator.get_current_path(),
                             filename=self.touched_file.filename,
-                            sftp=self.originator.sftp)
-        elif option == 'File attributes':
+                            sftp=self.originator.sftp,
+                            on_popup=self.on_popup,
+                            on_popup_dismiss=self.on_popup_dismiss)
+
+        elif option == 'File permissions':
             self.originator.chmod(file=self.touched_file)
 
     def bind_external_drop(self):
@@ -444,6 +449,7 @@ class FilesSpace(StackLayout):
                 elif self.pressed_key == 'n' and 'ctrl' in modifiers and 'shift' in modifiers:
                     self.make_dir()
 
+
             except Exception:
                 pass
 
@@ -471,10 +477,10 @@ class FilesSpace(StackLayout):
         self.originator.open_file(file)
 
     def on_popup(self):
-        self.originator.mouse_locked = True
+        self.originator.on_popup()
 
     def on_popup_dismiss(self, *_):
-        self.originator.mouse_locked = False
+        self.originator.on_popup_dismiss()
 
     def remove_popup(self):
         self.originator.on_popup()
@@ -490,7 +496,6 @@ class FilesSpace(StackLayout):
             self.icon = FileTile
         elif icon == 'Details':
             self.icon = FileDetails
-
         self.sort_files()
 
     def remove(self, popup, _, answer):

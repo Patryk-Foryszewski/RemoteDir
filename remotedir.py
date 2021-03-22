@@ -48,7 +48,7 @@ class RemoteDir(BoxLayout):
         self.thumbnails = thumbnails()
         self.reconnection_tries = 0
         self.callback = None
-
+        self.current_act = {}
 
     def on_kv_post(self, base_widget):
         self.childs_to_light = [self.ids.current_path, self.ids.search, self.ids.settings,
@@ -124,24 +124,25 @@ class RemoteDir(BoxLayout):
                     'callback': self.files_space.refresh_thumbnails}
             self.execute_sftp_task(task)
 
-    def list_dir(self):
+    def list_dir(self, attrs_list=None):
         # print('DIRS', self.sftp.listdir_attr())
         self.compare_thumbs()
         #popup, content = info_popup(f'Listing {file_name(self.get_current_path())} directory')
-        try:
-            attrs_list = self.sftp.listdir_attr()
-        except OSError as ose:
-            if ose == 'Socket is closed':
-                self.callback = self.list_dir
-                self.connect()
-        except Exception as ex:
-            #content.text = f'List dir exception {ex}'
-            ex_log(f'List dir exception {ex}')
-
-        else:
-            #popup.dismiss()
-            self.add_attrs(attrs_list)
-            self.files_space.fill(attrs_list)
+        if not attrs_list:
+            try:
+                attrs_list = self.sftp.listdir_attr()
+            except OSError as ose:
+                if ose == 'Socket is closed':
+                    self.callback = self.list_dir
+                    self.connect()
+            except Exception as ex:
+                #content.text = f'List dir exception {ex}'
+                ex_log(f'List dir exception {ex}')
+                return
+            else:
+                #popup.dismiss()
+                self.add_attrs(attrs_list)
+        self.files_space.fill(attrs_list)
 
     def add_attrs(self, attrs):
         _path = self.get_current_path()
@@ -149,9 +150,11 @@ class RemoteDir(BoxLayout):
             attr.path = _path
             attr.thumbnail = self.thumbnails
 
-    def add_file(self, path, attrs, _):
+    def add_file(self, path=None, attrs=None, _=None, from_search=False):
         if path == self.get_current_path():
             self.add_attrs([attrs])
+            self.files_space.add_file(attrs)
+        elif from_search:
             self.files_space.add_file(attrs)
 
     def sort_menu(self):
@@ -165,6 +168,22 @@ class RemoteDir(BoxLayout):
     def sort_files(self, reverse=False):
         self.files_space.reverse = reverse
         self.files_space.sort_files()
+
+    def clear_file_space(self):
+        self.files_space.clear_widgets()
+
+    def search(self, text):
+
+        search_list = []
+        task = {'type': 'search',
+                'text': text,
+                'path': self.get_current_path(),
+                'thumbnail': self.thumbnails,
+                'remote_dir': self,
+                'search_list': search_list}
+        self.clear_file_space()
+        self.execute_sftp_task(task)
+        self.paths_history.append({'searched': search_list})
 
     def view_menu(self):
         buttons = ['Tiles', 'Details']
@@ -347,15 +366,28 @@ class RemoteDir(BoxLayout):
 
         self.execute_sftp_task(task)
 
+    def history_act_index(self):
+        return self.paths_history.index(self.current_act)
+
     def go_back(self):
-        index = self.paths_history.index(self.get_current_path())
+        index = self.history_act_index()
         if index > 0:
-            self.chdir(self.paths_history[index-1])
+            self.current_act = self.paths_history[index-1]
+            self.list_dir_from_history(self.current_act)
 
     def go_forward(self):
-        index = self.paths_history.index(self.get_current_path())
+        index = self.history_act_index()
         if index < len(self.paths_history)-1:
-            self.chdir(self.paths_history[index+1])
+            self.current_act = self.paths_history[index+1]
+            self.list_dir_from_history(self.current_act)
+
+    def list_dir_from_history(self, act):
+        print('HISTORY ACT', act)
+        key = list(act.keys())[0]
+        if key == 'listed':
+            self.chdir(act[key])
+        elif key == 'searched':
+            self.list_dir(attrs_list=act[key])
 
     def get_cwd(self):
         cwd = self.sftp.getcwd()
@@ -525,10 +557,10 @@ class RemoteDir(BoxLayout):
         self.progress_box.transfer_stop()
 
     def on_popup_dismiss(self, *_):
-        print('ON POPUP DISMISS')
         self.mouse_locked = False
 
     def chdir(self, path):
+        print('CHDIR', path)
         # noinspection PyBroadException
         try:
             self.sftp.chdir(path)
@@ -547,7 +579,9 @@ class RemoteDir(BoxLayout):
         else:
             self.list_dir()
             self.current_path = path
-            self.paths_history.append(self.get_current_path())
+            act = {'listed': self.get_current_path()}
+            self.current_act = act
+            self.paths_history.append(act)
             return True
 
     def is_current_path(self, path):
@@ -561,10 +595,10 @@ class RemoteDir(BoxLayout):
         pass
 
     def open_file(self, file):
+        full_path = posix_path(file.attrs.path, file.filename)
         if file.file_type == 'dir':
-            path = posix_path(self.get_current_path(), file.filename)
-            self.chdir(path)
+            self.chdir(full_path)
         else:
-            src_path = posix_path(self.get_current_path(), file.filename)
+            src_path = posix_path(full_path)
             task = {'type': 'open', 'src_path': src_path}
             self.execute_sftp_task(task)
