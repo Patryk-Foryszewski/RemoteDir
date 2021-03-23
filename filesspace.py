@@ -85,8 +85,8 @@ class FilesSpace(StackLayout):
                 file.set_thumbnail()
                 break
 
-    def rename_file(self, old, new, file):
-        self.originator.rename_file(old=old, new=new, file=file)
+    def rename_file(self, full_old_path, full_new_path, file):
+        self.originator.rename_file(full_old_path, full_new_path, file)
 
     def remove_file(self, file):
         """
@@ -379,11 +379,11 @@ class FilesSpace(StackLayout):
         self.originator.external_dropfile(localpath, destination)
 
     def internal_file_drop(self, file):
-        """Called from FileBox when it detects widget collision"""
+        """Called from IconController when it detects widget collision"""
         for mfile in self.marked_files:
             old = mfile.filename
             new = posix_path(file.filename, mfile.filename)
-            self.originator.rename_file(old, new, mfile, drop=True)
+            self.originator.rename_file(old, new, mfile)
 
     def unfocus_files(self, files=None):
         """
@@ -449,29 +449,41 @@ class FilesSpace(StackLayout):
                 elif self.pressed_key == 'n' and 'ctrl' in modifiers and 'shift' in modifiers:
                     self.make_dir()
 
-
             except Exception:
                 pass
 
     # end keyboard management
     def copy_files(self):
+        clipboard.OpenClipboard()
+        clipboard.EmptyClipboard()
+        clipboard.CloseClipboard()
         self.copied_files.clear()
-        wd = self.originator.get_cwd()
         for file in self.marked_files:
-            self.copied_files.append(os.path.join(wd, file.filename))
+            self.copied_files.append(file)
 
     def paste_files(self):
+        print('PASTE FILES', self.copied_files)
         clipboard.OpenClipboard()
         files = ()
         if clipboard.IsClipboardFormatAvailable(clipboard.CF_HDROP):
             files = copy.deepcopy(clipboard.GetClipboardData(clipboard.CF_HDROP))
+        if files:
+            clipboard.EmptyClipboard()
+            clipboard.CloseClipboard()
 
-        clipboard.EmptyClipboard()
-        clipboard.CloseClipboard()
-
-        for file in files:
-            file = bytes(file, 'utf-8')
-            self.external_dropfile(None, file)
+            for file in files:
+                file = bytes(file, 'utf-8')
+                self.external_dropfile(None, file)
+        elif self.copied_files:
+            path = self.originator.current_path
+            if path:
+                for file in self.copied_files:
+                    old = posix_path(file.path, file.filename)
+                    new = posix_path(path, file.filename)
+                    self.rename_file(old, new, file)
+                    self.copied_files.remove(file)
+            else:
+                print('Can not copy files to current path')
 
     def open_file(self, file):
         self.originator.open_file(file)

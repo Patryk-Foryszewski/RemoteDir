@@ -350,6 +350,11 @@ def thumb_name(src_path):
     return f'{name}.{thumbnail_ext}'
 
 
+def thumb_dir_path(remote_path):
+    print('THUMB DIR PATH', cache_path, remote_path, thumb_dir, pure_windows_path(cache_path, remote_path.strip('/'), thumb_dir))
+    return pure_windows_path(cache_path, remote_path.strip('/'), thumb_dir)
+
+
 def default_remote():
     # noinspection PyBroadException
     try:

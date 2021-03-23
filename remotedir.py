@@ -5,6 +5,7 @@ from kivy.clock import Clock
 from colors import colors
 from common import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path, find_thumb, thumbnails
 from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir, thumbnail_ext
+from common import thumb_dir_path, pure_windows_path
 
 from sftp.connection import Connection
 from exceptions import *
@@ -173,7 +174,7 @@ class RemoteDir(BoxLayout):
         self.files_space.clear_widgets()
 
     def search(self, text):
-
+        print('SEARCH', text)
         search_list = []
         task = {'type': 'search',
                 'text': text,
@@ -182,6 +183,7 @@ class RemoteDir(BoxLayout):
                 'remote_dir': self,
                 'search_list': search_list}
         self.clear_file_space()
+        self.current_path = ''
         self.execute_sftp_task(task)
         self.paths_history.append({'searched': search_list})
 
@@ -387,6 +389,7 @@ class RemoteDir(BoxLayout):
         if key == 'listed':
             self.chdir(act[key])
         elif key == 'searched':
+            self.current_path = ''
             self.list_dir(attrs_list=act[key])
 
     def get_cwd(self):
@@ -445,56 +448,75 @@ class RemoteDir(BoxLayout):
         else:
             return attrs
 
-    def rename_thumbnail(self, old_name, new_name):
+    def rename_thumbnail(self, old_path, old_name, new_path, new_name):
+        # print('RENAME THUMBNAIL', old_path, old_name, new_path, new_name)
         if self.thumbnails:
-            from common_vars import find_thumb
-            old_local_thumbnail = find_thumb(self.get_current_path(), old_name)
-            new_name = f'{new_name}.{thumbnail_ext}'
-            old_name = f'{old_name}.{thumbnail_ext}'
+            from common import find_thumb
+            old_local_thumbnail = find_thumb(old_path, old_name)
             if old_local_thumbnail:
-                new_local_thumbnail = os.path.join(os.path.split(old_local_thumbnail)[0], new_name)
+                new_name = f'{new_name}.{thumbnail_ext}'
+                old_name = f'{old_name}.{thumbnail_ext}'
+                new_thumb_dir_path = thumb_dir_path(new_path)
+                # print('NEW THUMB DIR PATH', new_thumb_dir_path)
+                new_local_thumbnail = pure_windows_path(new_thumb_dir_path, new_name)
+                # print('     OLD LOCAL THUMBNAIL', old_local_thumbnail)
+                # print('     NEW LOCAL THUMBNAIL', new_local_thumbnail)
                 try:
                     if os.path.exists(new_local_thumbnail):
                         os.remove(new_local_thumbnail)
+
+                    if not os.path.exists(new_thumb_dir_path):
+                        os.makedirs(new_thumb_dir_path)
                     os.rename(old_local_thumbnail, new_local_thumbnail)
                 except Exception as ex:
                     ex_log('Failed to rename local thumbnail', ex)
 
-                old_remote_thumbnail = posix_path(self.get_current_path(), thumb_dir, old_name)
-                new_remote_thumbnail = posix_path(self.get_current_path(), thumb_dir, new_name)
+                old_remote_thumbnail = posix_path(old_path, thumb_dir, old_name)
+                path_to_remote_thumb = posix_path(new_path, thumb_dir)
+                new_remote_thumbnail = posix_path(path_to_remote_thumb, new_name)
+                # print('     OLD REMOTE THUMBNAIL', old_remote_thumbnail)
+                # print('     PATH TO REMOTE THUMB', path_to_remote_thumb)
+                # print('     NEW REMOTE THUMBNAIL', new_remote_thumbnail)
                 try:
+                    path_to_remote_thumb = posix_path(new_path, thumb_dir)
+                    if not self.sftp.exists(path_to_remote_thumb):
+                        self.sftp.makedirs(path_to_remote_thumb)
+                    if self.sftp.exists(new_remote_thumbnail):
+                        self.sftp.remove(new_remote_thumbnail)
                     self.sftp.rename(old_remote_thumbnail, new_remote_thumbnail)
                 except Exception as ex:
                     ex_log('Failed to rename remote thumbnail', ex)
 
-    def rename_file(self, old, new, file, drop=False):
+    def rename_file(self, full_old_path, full_new_path, file):
 
-        old_path = posix_path(self.get_current_path(), old)
-        new_path = posix_path(self.get_current_path(), new)
-        if not self.sftp.exists(new_path):
+        old_path, old_name = os.path.split(full_old_path)
+        new_path, new_name = os.path.split(full_new_path)
+        if not self.sftp.exists(full_new_path):
             try:
-                self.sftp.rename(old_path, new_path)
+                self.sftp.rename(full_old_path, full_new_path)
             except IOError as ie:
                 ex_log(f'Failed to rename file {ie}')
-                file.filename = old
+                file.filename = old_name
             else:
-                logger.info(f'File renamed from {file.filename} to {os.path.split(new)[1]}')
-                if drop:
-                    self.files_space.remove_file(file)
-                else:
-                    attrs = self.get_file_attrs(new_path)
-                    self.add_attrs([attrs])
+                logger.info(f'File renamed from {file.filename} to {os.path.split(new_name)[1]}')
+                self.files_space.remove_file(file)
+                # print('     CHECK IF CURRENT PATH', new_path, '|||', self.current_path, new_path == self.current_path )
+                if new_path == self.get_current_path():
+                    attrs = self.get_file_attrs(full_new_path)
                     if attrs:
+                        self.add_attrs([attrs])
                         file.attrs = copy.deepcopy(attrs)
                         file.filename = attrs.filename
+                        self.files_space.add_file(attrs)
+
             finally:
-                self.rename_thumbnail(old, new)
-                self.files_space.refresh_thumbnail(new)
+                self.rename_thumbnail(old_path, old_name, new_path, new_name)
+                self.files_space.refresh_thumbnail(new_name)
 
         else:
             confirm_popup(callback=self.remove_and_rename,
                           movable=True,
-                          _args=[new_path, old, new, file, drop],
+                          _args=[new_path, old_name, new_name, file],
                           text='File already exists in destination directory.\n\n'
                                'Click "Yes" if you wish to remove existing file and move'
                           )
@@ -517,7 +539,7 @@ class RemoteDir(BoxLayout):
                 ex_log(f'Failed to remove and rename file {ex}')
             else:
                 popup.dismiss()
-                self.rename_file(content._args[1], content._args[2], content._args[3], content._args[4])
+                self.rename_file(content._args[1], content._args[2], content._args[3])
 
         else:
             popup.dismiss()
