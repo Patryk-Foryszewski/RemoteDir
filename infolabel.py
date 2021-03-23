@@ -19,6 +19,5 @@ class InfoLabel(Label):
             Clock.schedule_once(dismiss, 3)
 
     def on_text(self, *args):
-        print('INFO LABEL', self.text_size, self.texture_size, *args)
         self.width = self.text_size[0] + 10
 

@@ -123,7 +123,6 @@ class IconController(BoxLayout):
         if text != self.filename:
             full_old_path = posix_path(self.path, self.filename)
             full_new_path = posix_path(self.path, text)
-
             self.space.rename_file(full_old_path, full_new_path, file=self)
             self.ids.filename.disabled = True
             self.focus = False

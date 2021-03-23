@@ -10,7 +10,6 @@ from common import thumb_dir_path, pure_windows_path
 from sftp.connection import Connection
 from exceptions import *
 from threads import TransferManager
-from threads.thumbdownload import ThumbDownload
 import queue
 import os
 from paramiko.ssh_exception import SSHException, AuthenticationException, BadAuthenticationType
@@ -35,12 +34,12 @@ class RemoteDir(BoxLayout):
         self.mouse_locked = False
         self.password = None
         self.sftp = None
-        self.current_path = default_remote()
+        self.base_path = None
+        self.current_path = ''
         self.marked_files = set()
         self.files_queue = queue.LifoQueue()
         self.paths_history = []
         self.tasks_queue = None
-        self.base_path = None
         self.connection = None
         self._y = None
         self.childs_to_light = None
@@ -49,7 +48,7 @@ class RemoteDir(BoxLayout):
         self.thumbnails = thumbnails()
         self.reconnection_tries = 0
         self.callback = None
-        self.current_act = {}
+        self.current_history_index = 0
 
     def on_kv_post(self, base_widget):
         self.childs_to_light = [self.ids.current_path, self.ids.search, self.ids.settings,
@@ -58,7 +57,56 @@ class RemoteDir(BoxLayout):
 
         self.files_space = self.ids.files_space
         self.progress_box = self.ids.progress_box
+        self.base_path = ''
+        self.current_path = default_remote()
         self.connect()
+
+    def relative_path(self, path):
+        return path.lstrip(self.base_path)
+
+    def on_current_path(self, *_):
+        if self.current_path:
+            self.ids.current_path.text = f'/{self.relative_path(self.current_path)}'
+        else:
+            self.ids.current_path.text = ''
+
+    def get_history_action(self, act):
+        return act['action']
+
+    def show_history(self, widget):
+        print('HISTORY', self.paths_history)
+        prepared = []
+        go_to = []
+        index_map = {}
+        index = 1
+        for _index, act in enumerate(self.paths_history):
+            action = self.get_history_action(act)
+            if act['go_to'] in go_to:
+                continue
+            go_to.append(act['go_to'])
+            if action == 'search':
+                prepared.append(f'{index} Searching for: {act["text"]}')
+            elif action == 'listed':
+                prepared.append(f'{index} {self.relative_path(act["go_to"])}')
+            index_map[index] = _index
+            index += 1
+            
+        self.history_popup = menu_popup(originator=self,
+                                        callback=self.show_history_act,
+                                        buttons=prepared,
+                                        widget=widget,
+                                        forced_size=(widget.width, None))
+        self.history_popup.index_map = index_map
+
+    def show_history_act(self, choice):
+        h_index = int(choice.split(' ')[0])
+        p_index = self.history_popup.index_map[h_index]
+        self.list_dir_from_history(self.paths_history[p_index])
+
+    def chdir_from_input(self, path):
+        path = path.lstrip('/')
+        path = path.lstrip('\\')
+        self.chdir(posix_path(self.base_path, path))
 
     def on_mouse_move(self, _, mouse_pos):
         if not self.mouse_locked:
@@ -174,7 +222,6 @@ class RemoteDir(BoxLayout):
         self.files_space.clear_widgets()
 
     def search(self, text):
-        print('SEARCH', text)
         search_list = []
         task = {'type': 'search',
                 'text': text,
@@ -185,7 +232,7 @@ class RemoteDir(BoxLayout):
         self.clear_file_space()
         self.current_path = ''
         self.execute_sftp_task(task)
-        self.paths_history.append({'searched': search_list})
+        self.paths_history.append({'action': 'search', 'go_to': search_list, 'text': text})
 
     def view_menu(self):
         buttons = ['Tiles', 'Details']
@@ -368,29 +415,25 @@ class RemoteDir(BoxLayout):
 
         self.execute_sftp_task(task)
 
-    def history_act_index(self):
-        return self.paths_history.index(self.current_act)
-
     def go_back(self):
-        index = self.history_act_index()
-        if index > 0:
-            self.current_act = self.paths_history[index-1]
-            self.list_dir_from_history(self.current_act)
+        if self.current_history_index > 0:
+            self.current_history_index -= 1
+            self.list_dir_from_history(self.paths_history[self.current_history_index])
 
     def go_forward(self):
-        index = self.history_act_index()
-        if index < len(self.paths_history)-1:
-            self.current_act = self.paths_history[index+1]
-            self.list_dir_from_history(self.current_act)
+        if self.current_history_index < len(self.paths_history)-1:
+            self.current_history_index += 1
+            self.list_dir_from_history(self.paths_history[self.current_history_index])
+
 
     def list_dir_from_history(self, act):
         print('HISTORY ACT', act)
-        key = list(act.keys())[0]
-        if key == 'listed':
-            self.chdir(act[key])
-        elif key == 'searched':
+        action = act['action']
+        if action == 'listed':
+            self.chdir(act['go_to'])
+        elif action == 'search':
             self.current_path = ''
-            self.list_dir(attrs_list=act[key])
+            self.list_dir(attrs_list=act['go_to'])
 
     def get_cwd(self):
         cwd = self.sftp.getcwd()
@@ -601,9 +644,9 @@ class RemoteDir(BoxLayout):
         else:
             self.list_dir()
             self.current_path = path
-            act = {'listed': self.get_current_path()}
-            self.current_act = act
-            self.paths_history.append(act)
+            self.paths_history.append({'action': 'listed', 'go_to': self.get_current_path()})
+            self.current_history_index = len(self.paths_history) - 1
+
             return True
 
     def is_current_path(self, path):

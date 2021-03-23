@@ -202,24 +202,26 @@ def confirm_popup(callback, text, title='Answer', movable=False, _args=None):
     Clock.schedule_once(open_popup, .1)
 
 
-def menu_popup(originator, buttons, callback, widget=None, mouse_pos=None):
+def menu_popup(originator, buttons, callback, widget=None, mouse_pos=None, forced_size=None):
     from popups.menupopup import MenuPopup
     from kivy.clock import Clock
 
-    def open_popup(_):
-        popup = MenuPopup(
-            buttons=buttons,
-            originator=originator,
-            callback=callback,
-            auto_dismiss=True,
-            size_hint=(None, None),
-            widget=widget,
-            mouse_pos=mouse_pos
-        )
+    popup = MenuPopup(
+        buttons=buttons,
+        originator=originator,
+        callback=callback,
+        auto_dismiss=True,
+        size_hint=(None, None),
+        widget=widget,
+        mouse_pos=mouse_pos,
+        forced_size=forced_size
+    )
 
+    def open_popup(_):
         popup.open()
 
     Clock.schedule_once(open_popup, .1)
+    return popup
 
 
 def thumbnail_popup(originator, destination, filename, sftp, on_popup, on_popup_dismiss):
@@ -351,7 +353,6 @@ def thumb_name(src_path):
 
 
 def thumb_dir_path(remote_path):
-    print('THUMB DIR PATH', cache_path, remote_path, thumb_dir, pure_windows_path(cache_path, remote_path.strip('/'), thumb_dir))
     return pure_windows_path(cache_path, remote_path.strip('/'), thumb_dir)
 
 

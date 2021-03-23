@@ -33,7 +33,7 @@ class MenuPopup(ModalView):
     spacing = NumericProperty(1)
     # MenuPopup & ButtonSpace
 
-    def __init__(self, buttons, originator, callback=None, widget=None, mouse_pos=None, **kwargs):
+    def __init__(self, buttons, originator, callback=None, widget=None, mouse_pos=None, forced_size=None, **kwargs):
         super().__init__(**kwargs)
 
         self.originator = originator
@@ -42,7 +42,8 @@ class MenuPopup(ModalView):
         self.fill()
         self.widget = widget
         self.mouse_pos = mouse_pos
-        self.set_width()
+        self.forced_size = forced_size
+        self.set_size()
         self.set_pos_hint()
 
     def fill(self):
@@ -54,17 +55,24 @@ class MenuPopup(ModalView):
     def on_dismiss(self):
         self.originator.on_popup_dismiss()
 
-    def set_width(self):
-        widths = []
-        for button in self.ids.buttons_space.children:
-            button.texture_update()
-            widths.append(button.texture_size[0])
+    def set_size(self):
+        if self.forced_size:
+            if self.forced_size[0]:
+                print('MENU POPUP WIDTH', self.forced_size[0])
+                self.width = self.forced_size[0]
+            if self.forced_size[1]:
+                self.height = self.forced_size[1]
+        else:
+            widths = []
+            for button in self.ids.buttons_space.children:
+                button.texture_update()
+                widths.append(button.texture_size[0])
 
-        widest = max(widths)
-        if widest > self.width:
-            self.width = widest + 6
-        for button in  self.ids.buttons_space.children:
-            button.width = self.width
+            widest = max(widths)
+            if widest > self.width:
+                self.width = widest + 6
+            for button in self.ids.buttons_space.children:
+                button.width = self.width
 
     def set_pos_hint(self):
 
@@ -82,12 +90,8 @@ class MenuPopup(ModalView):
             pos_x = self.widget.get_right()
             width = self.widget.width
             # if a widget is on the left side of window attach menu to its left else to right
-            if x > window_width / 2:
-                pos_x = self.widget.get_right()
-                halign = 'right'
-            else:
-                pos_x = x
-                halign = 'right'
+            pos_x = self.widget.get_right()
+            halign = 'right'
 
         window_height = Window.height
         self.height = len(self.buttons) * (button_height + self.spacing)

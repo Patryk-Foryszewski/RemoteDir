@@ -38,8 +38,6 @@ class RemoteSftpSearch(Thread):
             self.finished = True
             self.manager.thread_queue.put('.')
             self.manager.sftp_queue.put(self.sftp)
-            for attr in self.search_list:
-                print('ATTRS', attr, attr.thumbnail, attr.path)
             if not self.search_list:
                 self.add_file_event.cancel()
 
