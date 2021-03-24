@@ -280,7 +280,9 @@ class FilesSpace(StackLayout):
         menu_popup(originator=self,
                    buttons=buttons,
                    callback=self.menu,
-                   mouse_pos=self.to_window(*self.touch.pos))
+                   mouse_pos=self.to_window(*self.touch.pos),
+                   on_popup=self.on_popup,
+                   on_popup_dismiss=self.on_popup_dismiss)
         self.on_popup()
 
     def menu(self, option):

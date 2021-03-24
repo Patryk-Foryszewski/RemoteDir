@@ -61,6 +61,9 @@ class RemoteDir(BoxLayout):
         self.current_path = default_remote()
         self.connect()
 
+    def absolute_path(self, relative_path):
+        return posix_path(self.base_path, relative_path)
+
     def relative_path(self, path):
         return path.lstrip(self.base_path)
 
@@ -70,38 +73,7 @@ class RemoteDir(BoxLayout):
         else:
             self.ids.current_path.text = ''
 
-    def get_history_action(self, act):
-        return act['action']
 
-    def show_history(self, widget):
-        print('HISTORY', self.paths_history)
-        prepared = []
-        go_to = []
-        index_map = {}
-        index = 1
-        for _index, act in enumerate(self.paths_history):
-            action = self.get_history_action(act)
-            if act['go_to'] in go_to:
-                continue
-            go_to.append(act['go_to'])
-            if action == 'search':
-                prepared.append(f'{index} Searching for: {act["text"]}')
-            elif action == 'listed':
-                prepared.append(f'{index} {self.relative_path(act["go_to"])}')
-            index_map[index] = _index
-            index += 1
-            
-        self.history_popup = menu_popup(originator=self,
-                                        callback=self.show_history_act,
-                                        buttons=prepared,
-                                        widget=widget,
-                                        forced_size=(widget.width, None))
-        self.history_popup.index_map = index_map
-
-    def show_history_act(self, choice):
-        h_index = int(choice.split(' ')[0])
-        p_index = self.history_popup.index_map[h_index]
-        self.list_dir_from_history(self.paths_history[p_index])
 
     def chdir_from_input(self, path):
         path = path.lstrip('/')
@@ -211,7 +183,9 @@ class RemoteDir(BoxLayout):
         menu_popup(originator=self,
                    buttons=buttons,
                    callback=self.files_space.sort_files,
-                   widget=self.ids.sort_menu)
+                   widget=self.ids.sort_menu,
+                   on_popup=self.on_popup,
+                   on_popup_dismiss=self.on_popup_dismiss)
         self.on_popup()
 
     def sort_files(self, reverse=False):
@@ -223,23 +197,26 @@ class RemoteDir(BoxLayout):
 
     def search(self, text):
         search_list = []
+        self.clear_file_space()
         task = {'type': 'search',
                 'text': text,
                 'path': self.get_current_path(),
                 'thumbnail': self.thumbnails,
                 'remote_dir': self,
                 'search_list': search_list}
-        self.clear_file_space()
+
         self.current_path = ''
         self.execute_sftp_task(task)
-        self.paths_history.append({'action': 'search', 'go_to': search_list, 'text': text})
+        self.add_act_to_history({'action': 'search', 'go_to': search_list, 'text': text})
 
     def view_menu(self):
         buttons = ['Tiles', 'Details']
         menu_popup(originator=self,
                    buttons=buttons,
                    callback=self.files_space.view_menu,
-                   widget=self.ids.view_menu)
+                   widget=self.ids.view_menu,
+                   on_popup=self.on_popup,
+                   on_popup_dismiss=self.on_popup_dismiss)
         self.on_popup()
 
     def make_dir(self, name):
@@ -259,7 +236,10 @@ class RemoteDir(BoxLayout):
         menu_popup(originator=self,
                    buttons=buttons,
                    callback=self.files_space.file_size,
-                   widget=self.ids.file_size)
+                   widget=self.ids.file_size,
+                   on_popup=self.on_popup,
+                   on_popup_dismiss=self.on_popup_dismiss
+                   )
 
     def connect(self, popup=None, password=None):
         self.files_space.unbind_external_drop()
@@ -415,6 +395,49 @@ class RemoteDir(BoxLayout):
 
         self.execute_sftp_task(task)
 
+    @staticmethod
+    def get_history_action(act):
+        return act['action']
+
+    def show_history(self, widget):
+        print('HISTORY', self.paths_history)
+        prepared = []
+        go_to = []
+        index_map = {}
+        index = 1
+        for _index, act in enumerate(self.paths_history):
+            action = self.get_history_action(act)
+            print('GO TO',act['go_to'], act['go_to'] in go_to )
+            if act['go_to'] in go_to:
+                continue
+            go_to.append(act['go_to'])
+            if action == 'search':
+                prepared.append(f'{index} Searching for: {act["text"]}')
+            elif action == 'listed':
+                path = self.relative_path(act["go_to"])
+                prepared.append(f'{index} {path if path else "Default path"}')
+            print('PREPARED', prepared)
+            index_map[index] = _index
+            index += 1
+
+        self.history_popup = menu_popup(originator=self,
+                                        callback=self.show_history_act,
+                                        buttons=prepared,
+                                        widget=widget,
+                                        forced_size=(widget.width, None),
+                                        on_popup=self.on_popup,
+                                        on_popup_dismiss=self.on_popup_dismiss)
+        self.history_popup.index_map = index_map
+
+    def show_history_act(self, choice):
+        h_index = int(choice.split(' ')[0])
+        p_index = self.history_popup.index_map[h_index]
+        self.current_history_index = p_index
+        self.list_dir_from_history(self.paths_history[p_index])
+
+    def add_act_to_history(self, act):
+        self.paths_history.append(act)
+
     def go_back(self):
         if self.current_history_index > 0:
             self.current_history_index -= 1
@@ -425,12 +448,11 @@ class RemoteDir(BoxLayout):
             self.current_history_index += 1
             self.list_dir_from_history(self.paths_history[self.current_history_index])
 
-
     def list_dir_from_history(self, act):
         print('HISTORY ACT', act)
         action = act['action']
         if action == 'listed':
-            self.chdir(act['go_to'])
+            self.chdir(act['go_to'], add_to_history=False)
         elif action == 'search':
             self.current_path = ''
             self.list_dir(attrs_list=act['go_to'])
@@ -444,7 +466,10 @@ class RemoteDir(BoxLayout):
         menu_popup(widget=self.ids.settings,
                    originator=self,
                    buttons=['Credentials', 'Settings'],
-                   callback=self.choice)
+                   callback=self.choice,
+                   on_popup=self.on_popup,
+                   on_popup_dismiss=self.on_popup_dismiss
+                   )
 
     def choice(self, choice):
         self.on_popup_dismiss()
@@ -624,7 +649,7 @@ class RemoteDir(BoxLayout):
     def on_popup_dismiss(self, *_):
         self.mouse_locked = False
 
-    def chdir(self, path):
+    def chdir(self, path, add_to_history=True):
         print('CHDIR', path)
         # noinspection PyBroadException
         try:
@@ -635,8 +660,9 @@ class RemoteDir(BoxLayout):
                 self.chdir(self.current_path)
             elif str(ie) == 'Socket is closed':
                 self.reconnect()
-            elif ie.errno == 13: # Permission denied
-                logger.warning('Could not list directory. Permission denied. ')
+            elif ie.errno == 13:  # Permission denied
+                logger.warning('Could not list directory. Permission denied.')
+            return False
         except Exception as ex:
             ex_log(f'Failed to change dir {ex}')
             self.reconnect()
@@ -644,8 +670,8 @@ class RemoteDir(BoxLayout):
         else:
             self.list_dir()
             self.current_path = path
-            self.paths_history.append({'action': 'listed', 'go_to': self.get_current_path()})
-            self.current_history_index = len(self.paths_history) - 1
+            if add_to_history:
+                self.add_act_to_history({'action': 'listed', 'go_to': self.get_current_path()})
 
             return True
 
@@ -663,6 +689,7 @@ class RemoteDir(BoxLayout):
         full_path = posix_path(file.attrs.path, file.filename)
         if file.file_type == 'dir':
             self.chdir(full_path)
+            self.current_history_index += 1
         else:
             src_path = posix_path(full_path)
             task = {'type': 'open', 'src_path': src_path}

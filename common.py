@@ -202,7 +202,12 @@ def confirm_popup(callback, text, title='Answer', movable=False, _args=None):
     Clock.schedule_once(open_popup, .1)
 
 
-def menu_popup(originator, buttons, callback, widget=None, mouse_pos=None, forced_size=None):
+def menu_popup(originator, buttons, callback,
+               widget=None,
+               mouse_pos=None,
+               forced_size=None,
+               on_popup=None,
+               on_popup_dismiss=None):
     from popups.menupopup import MenuPopup
     from kivy.clock import Clock
 
@@ -216,9 +221,11 @@ def menu_popup(originator, buttons, callback, widget=None, mouse_pos=None, force
         mouse_pos=mouse_pos,
         forced_size=forced_size
     )
+    popup.bind(on_dismiss=on_popup_dismiss)
 
     def open_popup(_):
         popup.open()
+        on_popup()
 
     Clock.schedule_once(open_popup, .1)
     return popup
