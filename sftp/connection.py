@@ -1,6 +1,6 @@
 from common import get_config, mk_logger, my_knownhosts
 from sftp.hostkeymanager import HostKeyManager
-from exceptions import InvalidConfig
+from exceptions import InvalidConfig, PasswordEncrypted
 import pysftp
 
 logger = mk_logger(__name__)
@@ -12,6 +12,7 @@ ex_log = ex_log.exception
 
 class Connection:
     def __init__(self, password=None):
+        print('CONNECTION INIT', password)
         self.password = password
         self.sftp = None
         self.private_key = None
@@ -32,10 +33,14 @@ class Connection:
         self.config = get_config()
         self.server = self.config.get('CREDENTIALS', 'server')
         self.user = self.config.get('CREDENTIALS', 'user')
+        password = self.config.get('CREDENTIALS', 'password')
         self.port = self.config.get('CREDENTIALS', 'port')
         pkey = self.config.get('CREDENTIALS', 'private_key')
         self.private_key = pkey if pkey else None
         self.private_key_pass = None
+        print('CONNECTION', password, self.password, password and not self.password)
+        if password and not self.password:
+            raise PasswordEncrypted
 
     def validate_config(self):
         if not self.password and not self.private_key:

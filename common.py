@@ -177,7 +177,7 @@ def credential_popup(callback=None, title='Credentials', errors=None, auto_dismi
                       width=600,
                       auto_dismiss=auto_dismiss)
 
-        content.originator = popup
+        content.popup = popup
         popup.open()
 
     Clock.schedule_once(open_popup, .1)
@@ -429,3 +429,35 @@ def thumbnails():
 
 def file_name(_path):
     return path.split(_path)[1]
+
+
+def crypto(text, password, _encrypt=False, _decrypt=False):
+    from cryptography.fernet import Fernet
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+    import base64
+    password = password.encode()
+    text = text.encode()
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA512(),
+        length=32,
+        iterations=666,
+        backend=default_backend(),
+        salt=b''
+    )
+    key = base64.urlsafe_b64encode(kdf.derive(password))
+    f = Fernet(key)
+    if _encrypt:
+        return f.encrypt(text)
+    elif _decrypt:
+        return f.decrypt(text)
+
+
+def encrypt(text, password):
+    return crypto(text, password, _encrypt=True)
+
+
+def decrypt(text, _password):
+    print('DECRYPT', text, _password)
+    return crypto(text, _password, _decrypt=True)

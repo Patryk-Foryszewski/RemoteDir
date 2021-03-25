@@ -9,6 +9,15 @@ class InvalidConfig(Exception):
         return f'Invalid config {self.errors}'
 
 
+class PasswordEncrypted(Exception):
+    def __init__(self):
+        super().__init__(self)
+        self.message = 'Type main password'
+
+    def __str__(self):
+        return self.message
+
+
 class ConfigNotFound(Exception):
     def __init__(self):
         super().__init__(self)

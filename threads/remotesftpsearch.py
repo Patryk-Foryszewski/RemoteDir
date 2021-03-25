@@ -3,6 +3,7 @@ from common import get_dir_attrs, mk_logger, thumb_dir, is_file, info_popup
 from os.path import split
 from queue import Queue
 from kivy.clock import Clock
+import re
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',

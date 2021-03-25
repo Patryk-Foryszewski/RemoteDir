@@ -6,7 +6,7 @@ from colors import colors
 from common import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path, find_thumb, thumbnails
 from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir, thumbnail_ext
 from common import thumb_dir_path, pure_windows_path
-
+import re
 from sftp.connection import Connection
 from exceptions import *
 from threads import TransferManager
@@ -242,6 +242,7 @@ class RemoteDir(BoxLayout):
                    )
 
     def connect(self, popup=None, password=None):
+        print('REMOTE DIR', password)
         self.files_space.unbind_external_drop()
         if popup:
             popup.dismiss()
@@ -268,6 +269,9 @@ class RemoteDir(BoxLayout):
             ex_log(f'Hostkey\'s match error {me.message}')
             self.connection.hostkeys.connect = self.connect
             self.connection.hostkeys.hostkey_popup(me.message)
+            return False
+        except PasswordEncrypted as pe:
+            credential_popup(callback=self.connect, errors={'message': str(pe), 'errors': []})
             return False
 
         except BadAuthenticationType as bat:
@@ -407,7 +411,7 @@ class RemoteDir(BoxLayout):
         index = 1
         for _index, act in enumerate(self.paths_history):
             action = self.get_history_action(act)
-            print('GO TO',act['go_to'], act['go_to'] in go_to )
+            print('GO TO', act['go_to'], act['go_to'] in go_to )
             if act['go_to'] in go_to:
                 continue
             go_to.append(act['go_to'])
@@ -434,6 +438,7 @@ class RemoteDir(BoxLayout):
         p_index = self.history_popup.index_map[h_index]
         self.current_history_index = p_index
         self.list_dir_from_history(self.paths_history[p_index])
+        #self.paths_history.insert()
 
     def add_act_to_history(self, act):
         self.paths_history.append(act)
