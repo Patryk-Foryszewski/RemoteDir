@@ -1,5 +1,5 @@
 from threading import Thread
-from common import posix_path, mk_logger, thumb_dir
+from common import posix_path, mk_logger, thumb_dir, get_dir_attrs
 from processes.thumbnail import ThumbnailGenerator
 import os
 
@@ -26,11 +26,15 @@ class Upload(Thread):
         self.waiting_for_directory = None
         self.attrs = None
         self.thumbnails = data['thumbnails']
+        self.settings = data['settings']
+        if self.settings == 'Ovewrite':
+            self.data['overwrite'] = True
 
     def run(self):
         self.bar.my_thread = self
         logger.info(f'Uploading file - {self.file_name}')
         self.bar.set_values(f'Uploading {self.src_path} to {self.dst_path}')
+
         try:
             if not self.sftp.exists(self.dst_path):
                 self.sftp.makedirs(self.dst_path)
@@ -49,22 +53,23 @@ class Upload(Thread):
             text = f'File {self.full_remote_path} already exists'
             logger.info(text)
             self.bar.file_exists_error(text=text)
+            self.manager.add_to_existing_files(data=self.data, bar=self.bar, preserve_mtime=self.preserve_mtime)
 
         except IOError as io:
             ex_log(f'Uploading {self.file_name} exception. {io}')
             if 'Socket is closed' in str(io):
                 self.manager.connection_error()
                 self.manager.put_transfer({**self.data, 'overwrite': True}, bar=self.bar)
-            else:
-                self.waiting_for_directory = True
-                self.bar.set_values(f'Waiting for directory')
+            # else:
+            #     self.waiting_for_directory = True
+            #     self.bar.set_values(f'Waiting for directory')
 
         except EOFError as eer:
             ex_log(f'Uploading {self.file_name} exception. {eer}')
             self.manager.put_transfer({**self.data, 'overwrite': True}, bar=self.bar)
 
         except Exception as ex:
-            ex_log(f'Uploading {self.file_name} {type(ex)}. {ex}')
+            ex_log(f'Uploading {self.file_name} unknown excetpion. {type(ex)}. {ex}')
 
         else:
             logger.info(f'Uploading {self.file_name} completed successfully')
@@ -93,8 +98,20 @@ class Upload(Thread):
             except Exception as ex:
                 ex_log(f'Failed to upload thumbnail for {self.file_name}. {ex}')
 
+    def file_exists_behaviour(self):
+        if self.settings == 'Overwrite':
+            self.data['overwrite'] = True
+        elif self.settings == 'Overwrite if size is different':
+            try:
+                remote_attrs = get_dir_attrs(self.src_path, self.sftp)
+                local_attrs = os.stat(self.dst_path).st_size
+                if remote_attrs.st_size != local_attrs.st_size:
+                    self.data['overwrite'] = True
+            except Exception as ex:
+                ex_log(f'Could not compare file attrs {ex}')
+
     def file_exists(self):
-        if self.sftp.exists(self.full_remote_path):
+        if not self.data.get('overwrite') and self.sftp.exists(self.full_remote_path):
             raise FileExistsError
 
     def put(self, localpath, remotepath, preserve_mtime):

@@ -38,7 +38,7 @@ class Connection:
         pkey = self.config.get('CREDENTIALS', 'private_key')
         self.private_key = pkey if pkey else None
         self.private_key_pass = None
-        print('CONNECTION', password, self.password, password and not self.password)
+
         if password and not self.password:
             raise PasswordEncrypted
 

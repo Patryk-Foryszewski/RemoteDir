@@ -1,0 +1,157 @@
+<TransferSettings>
+    orientation: 'vertical'
+    spacing: 1
+    spacing2: 10
+    canvas.before:
+        Color:
+            rgba: app.unactive_bcolor
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    Label:
+        text: 'Downloads'
+        text_size: self.size
+        halign: 'left'
+        width: 100
+    BoxLayout:
+        id: op1
+        size_hint_y: None
+        height: 26
+        m_text: 'Ask everytime'
+        spacing: root.spacing2
+        CheckBox:
+            group: 'downloads'
+            state: 'down' if root.download_setting == op1.m_text else 'normal'
+            on_state: root.download_setting = op1.m_text
+        Label:
+            text: op1.m_text
+            text_size: self.size
+            halign: 'left'
+            width: 100
+    BoxLayout:
+        id: op2
+        size_hint_y: None
+        height: 20
+        m_text: 'Overwrite'
+        spacing: root.spacing2
+        CheckBox:
+            group: 'downloads'
+            state: 'down' if root.download_setting == op2.m_text else 'normal'
+            on_state: root.download_setting = op2.m_text
+        Label:
+            text: op2.m_text
+            text_size: self.size
+            halign: 'left'
+            width: 100
+
+    # BoxLayout:
+    #     id: op3
+    #     size_hint_y: None
+    #     height: 20
+    #     m_text: 'Overwrite if source is newer'
+    #     spacing: root.spacing2
+    #     CheckBox:
+    #         group: 'downloads'
+    #         state: 'down' if root.download_setting == op3.m_text else 'normal'
+    #         on_state: root.download_setting = op3.m_text
+    #     Label:
+    #         text: op3.m_text
+    #         text_size: self.size
+    #         halign: 'left'
+    #         width: 100
+
+    BoxLayout:
+        id: op4
+        size_hint_y: None
+        height: 20
+        m_text: 'Overwrite if size is different'
+        spacing: root.spacing2
+        CheckBox:
+            group: 'downloads'
+            state: 'down' if root.download_setting == op4.m_text else 'normal'
+            on_state: root.download_setting = op4.m_text
+        Label:
+            text: op4.m_text
+            text_size: self.size
+            halign: 'left'
+            width: 100
+    Label:
+        text: 'Uploads'
+        text_size: self.size
+        halign: 'left'
+        width: 100
+    BoxLayout:
+        id: op1
+        size_hint_y: None
+        height: 26
+        m_text: 'Ask everytime'
+        spacing: root.spacing2
+        CheckBox:
+            group: 'uploads'
+            state: 'down' if root.upload_setting == op1.m_text else 'normal'
+            on_state: root.upload_setting = op1.m_text
+        Label:
+            text: op1.m_text
+            text_size: self.size
+            halign: 'left'
+            width: 100
+    BoxLayout:
+        id: op2
+        size_hint_y: None
+        height: 20
+        m_text: 'Overwrite'
+        spacing: root.spacing2
+        CheckBox:
+            group: 'uploads'
+            state: 'down' if root.upload_setting == op2.m_text else 'normal'
+            on_state: root.upload_setting = op2.m_text
+        Label:
+            text: op2.m_text
+            text_size: self.size
+            halign: 'left'
+            width: 100
+
+    # BoxLayout:
+    #     id: op3
+    #     size_hint_y: None
+    #     height: 20
+    #     m_text: 'Overwrite if source is newer'
+    #     spacing: root.spacing2
+    #     CheckBox:
+    #         group: 'uploads'
+    #         state: 'down' if root.upload_setting == op3.m_text else 'normal'
+    #         on_state: root.upload_setting = op3.m_text
+    #     Label:
+    #         text: op3.m_text
+    #         text_size: self.size
+    #         halign: 'left'
+    #         width: 100
+
+    BoxLayout:
+        id: op4
+        size_hint_y: None
+        height: 20
+        m_text: 'Overwrite if size is different'
+        spacing: root.spacing2
+        CheckBox:
+            group: 'uploads'
+            active: True if root.upload_setting == op4.m_text else False
+            #state: 'down' if root.upload_setting == op4.m_text else 'normal'
+            on_state: root.upload_setting = op4.m_text
+        Label:
+            text: op4.m_text
+            text_size: self.size
+            halign: 'left'
+            width: 100
+    #Label:
+    #    text: 'In "Owerwrite if source is newer" case, set time shift between your time zone and server time zone in minutes'
+    #    height: 50
+    #    text_size: self.size
+    #    halign: 'left'
+    #    width: 100
+    #TextInput:
+    #    text: str(root.timeshift)
+    #    on_text: root.timeshift = self.text
+    #ErrLabel:
+    #    id: timezone_err
+    BoxLayout:

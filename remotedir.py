@@ -15,6 +15,7 @@ import os
 from paramiko.ssh_exception import SSHException, AuthenticationException, BadAuthenticationType
 import copy
 from functools import partial
+from popups.transfersettings import TransferSettings
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -470,7 +471,7 @@ class RemoteDir(BoxLayout):
         self.on_popup()
         menu_popup(widget=self.ids.settings,
                    originator=self,
-                   buttons=['Credentials', 'Settings'],
+                   buttons=['Credentials', 'Settings', 'Transfer settings'],
                    callback=self.choice,
                    on_popup=self.on_popup,
                    on_popup_dismiss=self.on_popup_dismiss
@@ -480,11 +481,12 @@ class RemoteDir(BoxLayout):
         self.on_popup_dismiss()
         if choice == 'Credentials':
             credential_popup(auto_dismiss=True)
-        if choice == 'Settings':
+        elif choice == 'Settings':
             settings_popup()
+        elif choice == 'Transfer settings':
+            TransferSettings()
 
     def on_popup(self, *_):
-        print('ON POPUP')
         self.mouse_locked = True
 
     def remove_from_view(self, file):

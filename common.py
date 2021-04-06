@@ -459,5 +459,4 @@ def encrypt(text, password):
 
 
 def decrypt(text, _password):
-    print('DECRYPT', text, _password)
     return crypto(text, _password, _decrypt=True)

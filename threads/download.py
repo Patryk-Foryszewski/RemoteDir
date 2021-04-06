@@ -1,5 +1,5 @@
 from threading import Thread
-from common import is_local_file, mk_logger
+from common import is_local_file, mk_logger, get_dir_attrs
 from paramiko.ssh_exception import SSHException
 import os
 
@@ -24,10 +24,12 @@ class Download(Thread):
         self.done = False
         self.waiting_for_directory = None
         self.callback = None
+        self.settings = data['settings']
 
     def run(self):
         logger.info(f'Downloading {self.filename}')
         self.bar.my_thread = self
+        self.file_exists_behaviour()
         overwriting = self.data.get('overwrite')
         if overwriting or not self.exists():
             self.bar.set_values(f'{"Downloading" if not overwriting else "Overwriting"} {self.filename}')
@@ -61,12 +63,25 @@ class Download(Thread):
         elif os.path.exists(self.dst_path):
             self.bar.file_exists_error()
             self.bar.set_values(f'File {self.filename} already exists in destination directory.')
+            self.manager.add_to_existing_files(data=self.data, bar=self.bar, preserve_mtime=self.preserve_mtime)
             return True
         else:
             return False
 
     def do_not_overwrite(self):
         self.done = True
+
+    def file_exists_behaviour(self):
+        if self.settings == 'Overwrite':
+            self.data['overwrite'] = True
+        elif self.settings == 'Overwrite if size is different':
+            try:
+                remote_attrs = os.stat(self.src_path).st_size
+                local_attrs = get_dir_attrs(self.src_path, self.sftp)
+                if remote_attrs.st_size != local_attrs.st_size:
+                    self.data['overwrite'] = True
+            except Exception as ex:
+                ex_log(f'Could not compare file attrs {ex}')
 
     def overwrite(self):
         logger.info(f'Downloading {self.filename} - Skipped')

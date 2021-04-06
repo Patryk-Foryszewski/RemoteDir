@@ -158,7 +158,7 @@ class CredentialsPopup(BoxLayout):
             self.ids.private_key_err.text = 'Failed to read private key file'
         else:
             if text[0].split()[1] == 'ssh-rsa':
-               pass
+                pass
 
             self.ids.private_key.text = self.path
 
@@ -171,10 +171,8 @@ class CredentialsPopup(BoxLayout):
     def connect(self):
         self.unbind_external_drop()
         if self.encrypted_password and not self.password:
-            print('ENCRYPTED PASSWORD', self.encrypted_password)
             try:
                 decrypted_password = decrypt(self.encrypted_password, self.ids.main_password.text)
-                print('DECRYPTED PASSWORD', decrypted_password)
             except Exception as ex:
                 self.message = f'Failed to decrypt password {type(ex)}'
                 ex_log(self.message)
@@ -185,13 +183,10 @@ class CredentialsPopup(BoxLayout):
                 else:
                     return
 
-
-
         if not self.validate():
             return
         self.save_config()
         self.dismissed = True
-        print('CREDENTIALS', self.password)
         App.get_running_app().root.connect(self.popup, self.password)
 
     def save_config(self):
@@ -219,9 +214,7 @@ class CredentialsPopup(BoxLayout):
 
     def encrypt(self, text):
         main_password = self.ids.main_password.text
-        #password = self.inputs['program_password'].encode() or self.inputs['password'].encode()
-        print('ENCRYPT', text)
-        #config = json.dumps(self.inputs).encode()
+
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA512(),
             length=32,
@@ -233,10 +226,8 @@ class CredentialsPopup(BoxLayout):
         f = Fernet(key)
 
         decrypted = f.encrypt(text)
-        print('DECRYPTED', decrypted)
         return decrypted
-        # with open('config.ini', 'wb') as config:
-        #     config.write(decrypted)
+
 
     def validate_password(self, password, focus=False):
 

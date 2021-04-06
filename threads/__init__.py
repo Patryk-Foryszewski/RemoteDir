@@ -15,11 +15,13 @@ from threads.mkremotedirs import MkRemoteDirs
 from threads.removeremote import RemoveRemoteDirectory
 from threads.thumbdownload import ThumbDownload
 from threads.remotesftpsearch import RemoteSftpSearch
+from popups.currenttransfersettings import CurrentTransferSettings
+
 from weakref import WeakValueDictionary
 import os
 import stat
 import queue
-from common import posix_path, pure_windows_path, mk_logger
+from common import posix_path, pure_windows_path, mk_logger, get_config
 from kivy.clock import Clock
 from functools import partial
 from datetime import datetime
@@ -75,26 +77,31 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.progress_box.manager = self
         self.transfers_event = None
         self.progress_box.set_manager(self)
+        self.upload_settings = ''
+        self.download_settings = ''
+        self.timeshift = 0
+        self.existing_files = []
         for _ in range(self.max_connections):
             self.thread_queue.put('.')
 
     def run(self):
         self.start_transfers()
+        self.get_default_settings()
         while not self.tasks_queue.empty():
             task = self.tasks_queue.get()
             if task['type'] == 'upload':
                 if stat.S_ISDIR(os.lstat(task['src_path']).st_mode):
                     self.local_walk(task)
                 else:
-                    self.transfers.put({**task, 'dir': False})
+                    self.transfers.put({**task, 'dir': False, 'settings': self.upload_settings})
 
             elif task['type'] == 'download':
                 if stat.S_ISDIR(task['attrs'].st_mode):
-                    self.transfers.put({**task, 'dir': True})
+                    self.transfers.put({**task, 'dir': True, 'settings': self.download_setting})
                 else:
                     name = os.path.split(task['src_path'])[1]
                     task['dst_path'] = os.path.join(task['dst_path'], name)
-                    self.transfers.put({**task, 'dir': False})
+                    self.transfers.put({**task, 'dir': False, 'settings': self.download_settings})
 
             elif task['type'] == 'open':
                 self.transfers.put({**task})
@@ -107,6 +114,28 @@ class TransferManager(Thread, metaclass=SingletonMeta):
 
             elif task['type'] == 'search':
                 self.transfers.put({**task})
+
+    def add_to_existing_files(self, data, bar, preserve_mtime):
+        print('LENGHT', len(self.existing_files))
+        if len(self.existing_files) == 0:
+            CurrentTransferSettings(manager=self, transfer_list=self.existing_files)
+
+        self.existing_files.append([data, bar, preserve_mtime])
+
+    def get_default_settings(self):
+        config = get_config()
+        try:
+            self.upload_settings = config.get('DEFAULTS', 'upload')
+        except Exception:
+            self.upload_settings = 'Ask everytime'
+        try:
+            self.download_settings = config.get('DEFAULTS', 'download')
+        except Exception:
+            self.download_settings = 'Ask everytime'
+        try:
+            self.timeshift = int(config.get('DEFAULTS', 'timeshift'))
+        except Exception:
+            self.timeshift = 0
 
     def start_transfers(self):
         if not self.transfers_event:
@@ -235,6 +264,10 @@ class TransferManager(Thread, metaclass=SingletonMeta):
 
         elif self.all_threads_finished():
             self.stop_transfers('All threads finished')
+            print('EXISTING FILES', len(self.existing_files))
+            for existing_file in self.existing_files:
+                print(' *', existing_file)
+
             undone = 0
             for thread in self.threads:
                 if isinstance(thread, Upload) or isinstance(thread, Download):
@@ -283,7 +316,8 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                                    'dir': False,
                                    'src_path': pure_windows_path(root, file),
                                    'dst_path': relative_path,
-                                   'thumbnails': task['thumbnails']})
+                                   'thumbnails': task['thumbnails'],
+                                   'settings': self.upload_settings})
             if dirs:
                 empty_dirs = []
                 for _dir in dirs:
@@ -294,13 +328,15 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                                        'dir': True,
                                        'dst_path': relative_path,
                                        'name': empty_dirs,
-                                       'thumbnails': task['thumbnails']})
+                                       'thumbnails': task['thumbnails'],
+                                       'settings': self.upload_settings})
 
         self.put_transfer({'type': 'upload',
                            'dir': True,
                            'dst_path': dst_path,
                            'name': [dir_to_walk],
-                           'thumbnails': task['thumbnails']})
+                           'thumbnails': task['thumbnails'],
+                           'settings': self.upload_settings})
 
     def uploaded(self, path, attrs):
         Clock.schedule_once(partial(self.originator.add_file, path, attrs), 0.01)

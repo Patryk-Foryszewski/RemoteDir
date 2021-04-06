@@ -14,7 +14,7 @@ ex_log = ex_log.exception
 class RemoteWalk(Thread):
     def __init__(self, data, manager,  sftp):
         super().__init__()
-        self.transfer = data
+        self.data = data
         self.src_path = data['src_path']
         self.dst_path = data['dst_path']
         self.dir_name = os.path.split(data['src_path'])[1]
@@ -39,7 +39,8 @@ class RemoteWalk(Thread):
         task = {'type': 'download',
                 'dir': False,
                 'src_path': file_path,
-                'dst_path': relative_path}
+                'dst_path': relative_path,
+                'action': self.data['action']}
         self.manager.put_transfer(task)
 
     def dcallback(self, dir_path):
