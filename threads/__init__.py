@@ -81,27 +81,37 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.download_settings = ''
         self.timeshift = 0
         self.existing_files = []
+        self.upload_settings_popup = None
+        self.download_settings_popup = None
         for _ in range(self.max_connections):
             self.thread_queue.put('.')
 
     def run(self):
         self.start_transfers()
-        self.get_default_settings()
+        self.get_transfer_settings()
         while not self.tasks_queue.empty():
             task = self.tasks_queue.get()
             if task['type'] == 'upload':
                 if stat.S_ISDIR(os.lstat(task['src_path']).st_mode):
                     self.local_walk(task)
                 else:
-                    self.transfers.put({**task, 'dir': False, 'settings': self.upload_settings})
+
+                    self.transfers.put({**task,
+                                        'dir': False,
+                                        'settings': self.upload_settings})
 
             elif task['type'] == 'download':
                 if stat.S_ISDIR(task['attrs'].st_mode):
-                    self.transfers.put({**task, 'dir': True, 'settings': self.download_setting})
+                    self.transfers.put({**task,
+                                        'dir': True,
+                                        'settings': self.upload_settings})
                 else:
                     name = os.path.split(task['src_path'])[1]
                     task['dst_path'] = os.path.join(task['dst_path'], name)
-                    self.transfers.put({**task, 'dir': False, 'settings': self.download_settings})
+                    settings = self.download_settings if not task.get('settings') else self.download_settings
+                    self.transfers.put({**task,
+                                        'dir': False,
+                                        'settings': settings})
 
             elif task['type'] == 'open':
                 self.transfers.put({**task})
@@ -115,14 +125,24 @@ class TransferManager(Thread, metaclass=SingletonMeta):
             elif task['type'] == 'search':
                 self.transfers.put({**task})
 
-    def add_to_existing_files(self, data, bar, preserve_mtime):
-        print('LENGHT', len(self.existing_files))
-        if len(self.existing_files) == 0:
-            CurrentTransferSettings(manager=self, transfer_list=self.existing_files)
+    def add_to_existing_files(self, data, bar, thread):
+        if data['type'] == 'upload':
+            if not self.upload_settings_popup:
+                self.upload_settings_popup = CurrentTransferSettings(manager=self)
+            self.upload_settings_popup.append_transfers_list([data, bar, thread])
 
-        self.existing_files.append([data, bar, preserve_mtime])
+        elif data['type'] == 'download':
+            if not self.download_settings_popup:
+                self.download_settings_popup = CurrentTransferSettings(manager=self)
+            self.download_settings_popup.append_transfers_list([data, bar, thread])
 
-    def get_default_settings(self):
+    def set_transfer_settings(self, uploads=None, downloads=None):
+        if uploads:
+            self.upload_settings = uploads
+        if downloads:
+            self.download_settings = downloads
+
+    def get_transfer_settings(self):
         config = get_config()
         try:
             self.upload_settings = config.get('DEFAULTS', 'upload')
@@ -243,6 +263,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                             self.progress_box_shown = True
                     else:
                         bar = transfer['bar']
+
                     thread = Download(data=transfer, manager=self, bar=bar, sftp=sftp)
             elif transfer['type'] == 'open':
                 thread = Open(data=transfer, manager=self, sftp=sftp)
@@ -264,10 +285,6 @@ class TransferManager(Thread, metaclass=SingletonMeta):
 
         elif self.all_threads_finished():
             self.stop_transfers('All threads finished')
-            print('EXISTING FILES', len(self.existing_files))
-            for existing_file in self.existing_files:
-                print(' *', existing_file)
-
             undone = 0
             for thread in self.threads:
                 if isinstance(thread, Upload) or isinstance(thread, Download):

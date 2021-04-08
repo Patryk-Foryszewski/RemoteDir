@@ -27,8 +27,6 @@ class Upload(Thread):
         self.attrs = None
         self.thumbnails = data['thumbnails']
         self.settings = data['settings']
-        if self.settings == 'Ovewrite':
-            self.data['overwrite'] = True
 
     def run(self):
         self.bar.my_thread = self
@@ -39,30 +37,41 @@ class Upload(Thread):
             if not self.sftp.exists(self.dst_path):
                 self.sftp.makedirs(self.dst_path)
 
-            if self.data.get('overwrite'):
-                self.sftp.remove(self.full_remote_path)
-            else:
-                self.file_exists()
-            self.put(self.src_path, self.full_remote_path, self.preserve_mtime)
+            if self.prepared_to_put():
+                self.put(self.src_path, self.full_remote_path, self.preserve_mtime)
 
         except FileNotFoundError:
             ex_log(f'File {self.file_name} does\'t exists')
             self.bar.set_values(desc=f'File {self.file_name} does\'t exists')
 
-        except FileExistsError:
-            text = f'File {self.full_remote_path} already exists'
-            logger.info(text)
-            self.bar.file_exists_error(text=text)
-            self.manager.add_to_existing_files(data=self.data, bar=self.bar, preserve_mtime=self.preserve_mtime)
+        except FileExistsError as fe:
+            fe = str(fe)
+            if fe == 'opt1':
+                text = f'File {self.full_remote_path} already exists'
+                logger.info(text)
+                self.bar.file_exists_error(text=text)
+                self.manager.add_to_existing_files(data=self.data, bar=self.bar, thread=self)
+
+            elif fe == 'opt2':
+                self.skip()
+                text = f'File {self.full_remote_path} already exists. Skipped.'
+                logger.info(text)
+
+            elif fe == 'opt4':
+                self.skip()
+                text = f'File {self.full_remote_path} already exists. Skipped, not newer'
+                logger.info(text)
+
+            elif fe == 'opt5':
+                self.skip()
+                text = f'File {self.full_remote_path} already exists. Skipped, size not different'
+                logger.info(text)
 
         except IOError as io:
             ex_log(f'Uploading {self.file_name} exception. {io}')
             if 'Socket is closed' in str(io):
                 self.manager.connection_error()
                 self.manager.put_transfer({**self.data, 'overwrite': True}, bar=self.bar)
-            # else:
-            #     self.waiting_for_directory = True
-            #     self.bar.set_values(f'Waiting for directory')
 
         except EOFError as eer:
             ex_log(f'Uploading {self.file_name} exception. {eer}')
@@ -98,21 +107,51 @@ class Upload(Thread):
             except Exception as ex:
                 ex_log(f'Failed to upload thumbnail for {self.file_name}. {ex}')
 
-    def file_exists_behaviour(self):
-        if self.settings == 'Overwrite':
-            self.data['overwrite'] = True
-        elif self.settings == 'Overwrite if size is different':
-            try:
-                remote_attrs = get_dir_attrs(self.src_path, self.sftp)
-                local_attrs = os.stat(self.dst_path).st_size
-                if remote_attrs.st_size != local_attrs.st_size:
-                    self.data['overwrite'] = True
-            except Exception as ex:
-                ex_log(f'Could not compare file attrs {ex}')
+    def get_attrs(self):
+        try:
+            target_attrs = get_dir_attrs(self.full_remote_path, self.sftp)
+            source_attrs = os.lstat(self.src_path)
+        except Exception as ex:
+            ex_log(f'Could not compare file attrs {ex}')
+            return None, None
+        else:
+            return source_attrs, target_attrs
 
-    def file_exists(self):
-        if not self.data.get('overwrite') and self.sftp.exists(self.full_remote_path):
-            raise FileExistsError
+    def prepared_to_put(self):
+        if self.sftp.exists(self.full_remote_path):
+            print('PREPARE TO PUT', self.settings, self.data.get('overwrite'))
+
+            if self.data.get('overwrite'):
+                self.sftp.remove(self.full_remote_path)
+                return True
+
+            elif self.settings == 'opt1':
+                raise FileExistsError('opt1')
+
+            elif self.settings == 'opt2':
+                raise FileExistsError('opt2')
+
+            elif self.settings == 'opt3':
+                self.sftp.remove(self.full_remote_path)
+                return True
+
+            elif self.settings == 'opt4':
+                remote_attrs, local_attrs = self.get_attrs()
+                if remote_attrs and local_attrs.st_mtime > remote_attrs.st_mtime:
+                    self.sftp.remove(self.full_remote_path)
+                    return True
+                else:
+                    raise FileExistsError('opt4')
+
+            elif self.settings == 'opt5':
+                remote_attrs, local_attrs = self.get_attrs()
+                if remote_attrs and remote_attrs.st_size != local_attrs.st_size:
+                    self.sftp.remove(self.full_remote_path)
+                    return True
+                else:
+                    raise FileExistsError('opt5')
+        else:
+            return True
 
     def put(self, localpath, remotepath, preserve_mtime):
 
@@ -144,5 +183,6 @@ class Upload(Thread):
             self.manager.run()
 
     def skip(self):
+        print('SKIP')
         self.done = True
         self.bar.set_values(f'Uploading {self.src_path} to {self.dst_path} - Skipped')

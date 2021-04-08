@@ -1,69 +1,301 @@
 <CS_Label@Label>
     height: 20
     halign: 'left'
+    markup: True
+    shorten: True
+    ellipsis_options: {'color':(1,0.5,0.5,1),'underline':True}
 
 <CurrentTransferSettings>
     orientation: 'vertical'
-    spacing: 1
+    spacing: .02
+    spacing2: 10
     canvas.before:
         Color:
             rgba: app.unactive_bcolor
         Rectangle:
-            pos: self.pos
             size: self.size
+
+    RelativeLayout:
+        id: top_box
+        pos_hint: {'top': .98}
+        size_hint_y:  None
+        height: 20
+        CS_Label
+            text: 'Source'
+            text_size: self.size
+            pos_hint: {'x': .02}
+
+        CS_Label
+            text: 'Target'
+            text_size: self.size
+            pos_hint: {'x': .62}
+
     BoxLayout:
+        id: compare_box
         size_hint_y:  None
         height: 100
-        canvas.before:
-            Color:
-                rgba: (1,0,0,1)
-            Rectangle:
-                pos: self.pos
-                size: self.size
-
-
+        pos_hint: {'top': .98 - root.spacing - top_box.height/root.height}
         RelativeLayout:
             id: source
-            size_hint_x: .4
+            # why size_hint_x: .4 doesn't work here?
+            size_hint_x: None
+            width:  .4 * compare_box.width
             spacing: 1
-            canvas.before:
-                Color:
-                    rgba: (0, 0.2, .4, 1)
-                Rectangle:
-                    size: self.size
-            #AsyncImage:
-            #    source: 'img/file_icon.png'
-            #    size_hint: .3, .7
-            #    pos_hint: {'x': .1, 'center_y': .65}
-            #    canvas.before:
-            #        Color:
-            #            rgba: (0, 1, 0, 1)
-            #        Rectangle:
-            #            pos: self.pos
-            #            size: self.size
-            #
-            #BoxLayout:
-            #    orientation: 'vertical'
-            #    size_hint: .7, .7
-            #    pos_hint: {'x': .3, 'center_y': .65}
-            #    canvas.before:
-            #        Color:
-            #            rgba: (1, 0, 0, 1)
-            #        Rectangle:
-            #            pos: self.pos
-            #            size: self.size
-            #
-            #    CS_Label:
-            #        text: 'Name' #root.source['name']
-            #        text_size: self.size
-            #    CS_Label:
-            #        text: 'Date' #root.source['date']
-            #        text_size: self.size
-            #    CS_Label:
-            #        text: 'Size' #root.source['size']
-            #        text_size: self.size
-            #CS_Label
-            #    size_hint_y: .3
-            #    pos_hint: {'x':  0, 'y': .0}
 
-    BoxLayout:
+            AsyncImage:
+                source: 'img/file_icon.png'
+                size_hint: None, None
+                size: source.width * .3, source.height * .68
+                pos_hint: {'x': .02, 'center_y': .65}
+
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: None, None
+                size: source.width * .68, source.height * .7
+                pos_hint: {'x': .32, 'center_y': .65}
+
+                CS_Label:
+                    text: root.source['name']
+                    text_size: self.size
+                CS_Label:
+                    text: root.source['date']
+                    text_size: self.size
+                CS_Label:
+                    text: root.source['size']
+                    text_size: self.size
+            CS_Label
+                text: root.source['path']
+                text_size: self.size
+        BoxLayout:
+        RelativeLayout:
+            id: target
+            size_hint_x: None
+            width:  .4 * compare_box.width
+            spacing: 1
+            CS_Label
+                text: 'Target'
+                text_size: self.size
+                pos_hint: {'x': .02, 'top': .98}
+
+            AsyncImage:
+                source: 'img/file_icon.png'
+                size_hint: None, None
+                size: source.width * .3, source.height * .68
+                pos_hint: {'x': .02, 'center_y': .65}
+
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: None, None
+                size: source.width * .68, source.height * .7
+                pos_hint: {'x': .32, 'center_y': .65}
+
+                CS_Label:
+                    text: root.target['name']
+                    text_size: self.size
+                CS_Label:
+                    text: root.target['date']
+                    text_size: self.size
+                CS_Label:
+                    text: root.target['size']
+                    text_size: self.size
+            CS_Label
+                text: root.target['path']
+                text_size: self.size
+
+
+
+    RelativeLayout:
+        id: settings
+        size_hint_y: None
+        heihgt: 200
+        pos_hint: {'top': compare_box.y/root.height - root.spacing}
+        RelativeLayout:
+            size_hint_y: None
+            height: 120
+            pos_hint: {'x': .02, 'top': .98}
+            CS_Label:
+                text: root.option_text
+                text_size: self.size
+                padding_x: 3
+                pos_hint: {'x': 0, 'top': .98}
+            BoxLayout:
+                orientation: 'vertical'
+                spacing: 3
+                size_hint: .9, .9
+                pos_hint: {'center_y': .5}
+                BoxLayout:
+                    size_hint_y: None
+                    height: 20
+                    spacing: root.spacing2
+                    CheckBox:
+                        group: 'current_setting'
+                        active: True
+                        on_state: if self.active: root.set_option('Skip')
+
+                    Label:
+                        text: 'Skip'
+                        text_size: self.size
+                        halign: 'left'
+                        width: 100
+
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: 20
+                    spacing: root.spacing2
+                    CheckBox:
+                        group: 'current_setting'
+                        on_state: if self.active: root.set_option('Overwrite')
+                    Label:
+                        text: 'Overwrite'
+                        text_size: self.size
+                        halign: 'left'
+                        width: 100
+
+                BoxLayout:
+                    id: op3
+                    size_hint_y: None
+                    height: 20
+                    m_text: 'Overwrite if source is newer'
+                    spacing: root.spacing2
+                    CheckBox:
+                        group: 'current_setting'
+                        on_state: if self.active: root.set_option(op3.m_text)
+                        #on_state: root.download_setting = op3.m_text
+                    Label:
+                        text: op3.m_text
+                        text_size: self.size
+                        halign: 'left'
+                        width: 100
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: 20
+                    spacing: root.spacing2
+                    CheckBox:
+                        group: 'current_setting'
+                        on_state: if self.active: root.set_option('Overwrite if size is different')
+                    Label:
+                        text: 'Overwrite if size is different'
+                        text_size: self.size
+                        halign: 'left'
+                        width: 100
+
+
+        
+        RelativeLayout:
+            id: range
+            size_hint_y: None
+            height: 160
+            pos_hint: {'x': .52, 'top': .98}
+            CS_Label:
+                id: range_lbl
+                text: 'Choose range:'
+                text_size: self.size
+                pos_hint: {'x': 0, 'top': .98}
+                padding_x: 3
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: .9, (3 *(26 + self.spacing))/range.height
+                pos_hint: {'top': (range_lbl.y - root.spacing)/range.height}
+                spacing: 3
+                BoxLayout:
+                    size_hint_y: None
+                    height: 26
+                    spacing: root.spacing2
+                    CheckBox:
+                        id: ask
+                        group: 'range'
+                        active: True
+                        on_state: if self.active: root.set_range('Ask everytime')
+
+                    Label:
+                        text: 'Ask everytime'
+                        text_size: self.size
+                        halign: 'left'
+                        width: 100
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: 26
+                    spacing: root.spacing2
+                    CheckBox:
+                        id: session_uploads
+                        group: 'range'
+                        on_state: if self.active: root.set_range('Apply only for this session')
+                    Label:
+                        text: 'Apply only for this session'
+                        text_size: self.size
+                        halign: 'left'
+                        width: 100
+
+                BoxLayout:
+                    id: op2
+                    size_hint_y: None
+                    height: 26
+                    spacing: root.spacing2
+                    CheckBox:
+                        id: default_uploads
+                        group: 'range'
+                        on_state: if self.active: root.set_range('Set as default')
+                    Label:
+                        text: 'Set as default'
+                        text_size: self.size
+                        halign: 'left'
+                        width: 100
+
+
+
+    RelativeLayout:
+        pos_hint: {'y': buttons.top/root.height + root.spacing}
+        size_hint_y: None
+        height: 26
+        BoxLayout:
+            pos_hint: {'center_x': .5}
+            size_hint: None, None
+            size: 400, 26
+            spacing: 1
+
+            Label:
+                text: 'Previous file' #root.out_of
+                halign: 'right'
+                text_size: self.size
+            Image:
+                source: 'img/go_back.png'
+                on_touch_up:
+                    if self.collide_point(*args[1].pos) :\
+                    root.previous_file()
+
+            CS_Label:
+                text: root.out_of
+                halign: 'center' 
+                text_size: self.size
+            Image:
+                source: 'img/go_forward.png'
+                on_touch_up:
+                    if self.collide_point(*args[1].pos) :\
+                    root.next_file()
+            CS_Label:
+                text: 'Next file' #root.out_of
+                text_size: self.size
+
+    RelativeLayout:
+        id: buttons
+        size_hint_y: None
+        height: 26
+        pos_hint: {'y': .02}
+        BoxLayout:
+            pos_hint: {'right': .9, 'center_y': .5}
+            size_hint: None, None
+            size: 200, 26
+            spacing: 1
+            Button:
+                text: 'OK'
+                on_press: root.ok()
+            Button:
+                text: 'Cancel'
+                on_press: root.cancel()
+

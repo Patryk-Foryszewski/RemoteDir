@@ -1,13 +1,14 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.clock import Clock
-from common import get_config, config_file
+from common import get_config, config_file, TransferSettingsMapper
 from kivy.properties import StringProperty, BoundedNumericProperty
 
 
 class TransferSettings(BoxLayout):
-    download_setting = StringProperty('Ask everytime')
-    upload_setting = StringProperty('Ask everytime')
+    tsm = TransferSettingsMapper()
+    download_setting = StringProperty(tsm.options_dict['opt1'])
+    upload_setting = StringProperty(tsm.options_dict['opt2'])
     timeshift = StringProperty('0')
 
     def __init__(self):
@@ -47,7 +48,7 @@ class TransferSettings(BoxLayout):
         except Exception:
             pass
 
-        config.set('DEFAULTS', 'download', self.download_setting)
+        config.set('DEFAULTS', 'download', self.tsm._option(self.download_setting))
         with open(config_file, 'w+') as f:
             config.write(f)
 
@@ -59,7 +60,7 @@ class TransferSettings(BoxLayout):
         except Exception:
             pass
 
-        config.set('DEFAULTS', 'upload', self.upload_setting)
+        config.set('DEFAULTS', 'upload', self.tsm._option(self.upload_setting))
         with open(config_file, 'w+') as f:
             config.write(f)
 
@@ -67,12 +68,12 @@ class TransferSettings(BoxLayout):
         config = get_config()
         # noinspection PyBroadException
         try:
-            self.download_setting = config.get('DEFAULTS', 'download')
+            self.download_setting = self.tsm._option(config.get('DEFAULTS', 'download'))
         except Exception:
             pass
         # noinspection PyBroadException
         try:
-            self.upload_setting = config.get('DEFAULTS', 'upload')
+            self.upload_setting = self.tsm._option(config.get('DEFAULTS', 'upload'))
         except Exception:
             pass
 

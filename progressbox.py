@@ -78,7 +78,6 @@ class ProgressBox(BoxLayout):
         self.manager.threads.clear()
         self.show_bars(hide=True)
         self.ids.bars_space.clear_widgets()
-        self.height = 0
 
     def set_manager(self, manager):
         self.manager = manager

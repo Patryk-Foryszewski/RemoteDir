@@ -354,6 +354,14 @@ def file_ext(name):
     return os.path.splitext(name)[1]
 
 
+def filename(_path):
+    return os.path.split(_path)[1]
+
+
+def dst_path(_path):
+    return os.path.split(_path)[0]
+
+
 def thumb_name(src_path):
     name = os.path.split(src_path)[1]
     return f'{name}.{thumbnail_ext}'
@@ -460,3 +468,42 @@ def encrypt(text, password):
 
 def decrypt(text, _password):
     return crypto(text, _password, _decrypt=True)
+
+
+class TransferSettingsMapper:
+    def __init__(self):
+
+        self.options_dict = {
+            'opt1': 'Ask everytime',
+            'opt2': 'Skip',
+            'opt3': 'Overwrite',
+            'opt4': 'Overwrite if source is newer',
+            'opt5': 'Overwrite if size is different'
+            }
+
+        self.range_dict = {
+            'rng1': 'Ask everytime',
+            'rng2': 'Apply only for this session',
+            'rng3': 'Set as default'
+            }
+
+    def _option(self, txt):
+
+        if txt.startswith('opt'):
+            return self.options_dict[txt]
+        else:
+            for item in self.options_dict.items():
+                key, value = item[0], item[1]
+                if value == txt:
+                    return key
+
+    def _range(self, txt):
+
+        if txt.startswith('rng'):
+            return self.range_dict[txt]
+        else:
+            for item in self.range_dict.items():
+                key, value = item[0], item[1]
+                if value == txt:
+                    return key
+
