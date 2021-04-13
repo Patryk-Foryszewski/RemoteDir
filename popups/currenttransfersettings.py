@@ -19,7 +19,7 @@ class CurrentTransferSettings(RelativeLayout):
         self.current_index = 0
         self.transfers_list = []
         self.type = ''
-        self.settings_dict = {'option': 'Skip', 'range': 'Ask everytime'}
+        self.settings_dict = {'option': 'opt2', 'range': 'rng1'}
         self.pop_me()
 
     def append_transfers_list(self, transfer):
@@ -30,16 +30,13 @@ class CurrentTransferSettings(RelativeLayout):
             else:
                 self.option_text = 'Choose option for downloads'
             self.set_attrs(transfer[0])
-
         self.transfers_list.append(transfer)
         self._out_of()
-        print('LIST', len(self.transfers_list),  transfer[0]['src_path'])
 
     def _out_of(self):
-
+        print('OUT OF', self.current_index, len(self.transfers_list))
         if self.current_index > len(self.transfers_list):
             self.current_index -= 1
-
         self.out_of = f'{self.current_index + 1}/{len(self.transfers_list)}'
 
     def set_attrs(self, file):
@@ -102,51 +99,41 @@ class CurrentTransferSettings(RelativeLayout):
         self.transfers_list.pop(index)
         self._out_of()
 
-    def decisive_block(self, transfer):
-        option = self.settings_dict['option']
-        if option == 'Skip':
-            index = self.transfers_list.index(transfer)
-            self.set_attrs(self.transfers_list[index][0])
-            thread = self.transfers_list[index][2]
-            thread.skip()
-            self.transfers_list.pop(index)
-            self._out_of()
-        elif option == 'Overwrite':
-            self.overwrite(transfer)
-        elif option == 'Overwrite if source is newer':
-            if transfer['source_attrs'].st_atime > transfer['target_attrs'].st_atime:
-                self.overwrite(transfer)
-        elif option == 'Overwrite if size is different':
-            if transfer[0]['source_attrs'].st_size != transfer[0]['target_attrs'].st_size:
-                self.overwrite(transfer)
+    def remove_transfer(self, transfer):
+        self.transfers_list.remove(transfer)
+        self._out_of()
 
     def skip(self, transfer):
         self.set_attrs(transfer[0])
         thread = transfer[2]
         thread.skip()
-        self.transfers_list.remove(transfer)
-        self._out_of()
+        self.remove_transfer(transfer)
 
-    def skip_or_renew(self, option, transfer):
-        if option == 'Skip':
+    def restart(self, option, transfer):
+        transfer[0]['settings'] = option
+        self.remove_transfer(transfer)
+        self.manager.put_transfer(data=transfer[0], bar=transfer[1])
+
+    def skip_or_restart(self, option, transfer):
+        print('SKIP OR RESTART')
+        if option == 'opt2':
             self.skip(transfer)
         else:
-            transfer[0]['settings'] = option
-            self.manager.put_transfer(data=transfer[0], bar=transfer[1])
+            self.restart(option, transfer)
 
     def set_for_all_transfers(self, option):
         for i in range(len(self.transfers_list) - 1, -1, -1):
             transfer = self.transfers_list[i]
-            self.skip_or_renew(option, transfer)
+            self.skip_or_restart(option, transfer)
 
     def ok(self):
         print('OK', self.settings_dict)
-        _range = self.tsm._range(self.settings_dict['range'])
-        option = self.tsm._option(self.settings_dict['option'])
+        _range = self.settings_dict['range']
+        option = self.settings_dict['option']
 
         if _range == 'rng1':    # Ask everytime
             transfer = self.transfers_list[self.current_index]
-            self.skip_or_renew(option, transfer)
+            self.skip_or_restart(option, transfer)
 
         elif _range == 'rng2':  # Apply only for this session'
             if self.type == 'upload':
@@ -174,7 +161,16 @@ class CurrentTransferSettings(RelativeLayout):
         self.manager.start_transfers()
 
         if len(self.transfers_list) == 0:
-            self.popup.dismiss()
+            self.dismiss()
+
+    def dismiss(self):
+        if self.type == 'upload':
+            self.manager.upload_settings_popup = None
+        else:
+            self.manager.download_settings_popup = None
+        self.popup.dismiss()
 
     def cancel(self):
-        self.popup.dismiss()
+        self.transfers_list.clear()
+        self.current_index = 0
+        self.dismiss()

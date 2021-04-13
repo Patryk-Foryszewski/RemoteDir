@@ -6,6 +6,7 @@ Config.set('graphics', 'height', '600')
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
 from colors import colors
+from common import resource_path, img_path, thumbnails
 from kivy.app import App
 from kivy.lang.builder import Builder
 from remotedir import RemoteDir
@@ -20,19 +21,22 @@ logger = mk_logger(__name__)
 
 
 class Main(App):
-
     def build(self):
         logger.info('APP STARTED')
+        setattr(self, 'img_path', img_path)
+        setattr(self, 'thumbnails', thumbnails())
+
         for color in colors.items():
             setattr(self, color[0], color[1])
+
         try:
-            for kv in os.listdir('front'):
+            for kv in os.listdir(resource_path('front')):
                 if kv != 'main.kv':
-                    Builder.load_file(f'front/{kv}')
+                    Builder.load_file(resource_path('front', kv))
         except Exception as ex:
             logger.exception(f'Failed to load .kv {ex}')
         else:
-            return Builder.load_file('front/main.kv')
+            return Builder.load_file(resource_path('front', 'main.kv'))
 
 
 if __name__ == '__main__':

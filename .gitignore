@@ -6,3 +6,4 @@ privatekey.key
 SSH
 venv_python37
 config
+exe.py

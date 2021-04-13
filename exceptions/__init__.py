@@ -31,9 +31,8 @@ class HosKeyNotFound(Exception):
     def __init__(self, fingerprint):
         super().__init__(self)
         self.message = f"""
-                      This server host key is not known.
-                      To be sure you are logging into 
-                      correct server check if recived 
+                      This server host key is not known. To be sure you 
+                      are logging to correct server check if received
                       fingerprint is correct.
                       
                       Fingerprint: {fingerprint}

@@ -12,7 +12,6 @@ ex_log = ex_log.exception
 
 class Connection:
     def __init__(self, password=None):
-        print('CONNECTION INIT', password)
         self.password = password
         self.sftp = None
         self.private_key = None

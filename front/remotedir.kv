@@ -19,12 +19,12 @@
             spacing: 1
 
             Image:
-                source: 'img/go_back.png'
+                source: app.img_path('go_back.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.go_back()
             Image:
-                source: 'img/go_forward.png'
+                source: app.img_path('go_forward.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.go_forward()
@@ -35,7 +35,7 @@
                 multiline: False
                 on_text_validate: root.chdir_from_input(self.text)
             Image:
-                source: 'img/arrow_down.png'
+                source: app.img_path('arrow_down.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.show_history(current_path)
@@ -48,7 +48,7 @@
 
             Image:
                 id: settings
-                source: 'img/settings.png'
+                source: app.img_path('settings.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.settings()
@@ -62,10 +62,12 @@
             size_hint_x: None
             width: 100
             spacing: 1
+            Label:
+                text:
 
             Image:
                 id: view_menu
-                source: 'img/arrow_down.png'
+                source: app.img_path('arrow_down.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.view_menu()
@@ -73,7 +75,7 @@
 
             Image:
                 id: sort_menu
-                source: 'img/arrow_down.png'
+                source: app.img_path('arrow_down.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.sort_menu()
@@ -85,21 +87,21 @@
                 Image:
                     id: sort_files_up
                     size: 12, 12
-                    source: 'img/arrow_up.png'
+                    source: app.img_path('arrow_up.png')
                     on_touch_up:
                         if self.collide_point(*args[1].pos) :\
                         root.sort_files(reverse=False)
                 Image:
                     id: sort_files_down
                     size: 12, 12
-                    source: 'img/arrow_down.png'
+                    source: app.img_path('arrow_down.png')
                     on_touch_up:
                         if self.collide_point(*args[1].pos) :\
                         root.sort_files(reverse=True)
 
             Image:
                 id: file_size
-                source: 'img/arrow_down.png'
+                source: app.img_path('arrow_down.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.file_size()

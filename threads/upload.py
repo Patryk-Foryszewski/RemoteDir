@@ -2,6 +2,8 @@ from threading import Thread
 from common import posix_path, mk_logger, thumb_dir, get_dir_attrs
 from processes.thumbnail import ThumbnailGenerator
 import os
+from paramiko.ssh_exception import SSHException
+
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -45,12 +47,13 @@ class Upload(Thread):
             self.bar.set_values(desc=f'File {self.file_name} does\'t exists')
 
         except FileExistsError as fe:
+            print('FILE EXISTS ERROR', self.data)
             fe = str(fe)
             if fe == 'opt1':
                 text = f'File {self.full_remote_path} already exists'
                 logger.info(text)
                 self.bar.file_exists_error(text=text)
-                self.manager.add_to_existing_files(data=self.data, bar=self.bar, thread=self)
+                self.manager.existing_files_popup(data=self.data, bar=self.bar, thread=self)
 
             elif fe == 'opt2':
                 self.skip()
@@ -68,10 +71,19 @@ class Upload(Thread):
                 logger.info(text)
 
         except IOError as io:
-            ex_log(f'Uploading {self.file_name} exception. {io}')
-            if 'Socket is closed' in str(io):
+            io = str(io)
+            if 'Socket is closed' in io:
                 self.manager.connection_error()
                 self.manager.put_transfer({**self.data, 'overwrite': True}, bar=self.bar)
+                ex_log(f'Uploading {self.file_name} exception. {io}')
+            elif 'size mismatch in put' in io:
+                text = f'Uploading {self.file_name} exception. {io}. Remote disc is probably full'
+                ex_log(text)
+                self.bar.set_values(text)
+            else:
+                text = f'Uploading {self.file_name} exception. {io}'
+                ex_log(text)
+                self.bar.set_values(text)
 
         except EOFError as eer:
             ex_log(f'Uploading {self.file_name} exception. {eer}')
@@ -89,6 +101,7 @@ class Upload(Thread):
         finally:
             self.manager.sftp_queue.put(self.sftp)
             self.manager.thread_queue.put('.')
+            self.manager.next_transfer()
 
     def upload_thumbnail(self):
         if self.thumbnails:
@@ -115,6 +128,8 @@ class Upload(Thread):
             ex_log(f'Could not compare file attrs {ex}')
             return None, None
         else:
+            self.data['source_attrs'] = source_attrs
+            self.data['target_attrs'] = target_attrs
             return source_attrs, target_attrs
 
     def prepared_to_put(self):
@@ -126,12 +141,15 @@ class Upload(Thread):
                 return True
 
             elif self.settings == 'opt1':
+                self.get_attrs()
                 raise FileExistsError('opt1')
 
             elif self.settings == 'opt2':
+                self.get_attrs()
                 raise FileExistsError('opt2')
 
             elif self.settings == 'opt3':
+                print('REMOVE', self.full_remote_path)
                 self.sftp.remove(self.full_remote_path)
                 return True
 
@@ -154,7 +172,6 @@ class Upload(Thread):
             return True
 
     def put(self, localpath, remotepath, preserve_mtime):
-
         self.attrs = self.sftp.put(localpath=localpath,
                                    remotepath=remotepath,
                                    callback=self.bar.update,

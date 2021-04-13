@@ -21,7 +21,7 @@ from weakref import WeakValueDictionary
 import os
 import stat
 import queue
-from common import posix_path, pure_windows_path, mk_logger, get_config
+from common import posix_path, pure_windows_path, mk_logger, get_config, confirm_popup
 from kivy.clock import Clock
 from functools import partial
 from datetime import datetime
@@ -72,7 +72,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.max_connections = 3
         self.threads = []
         self.time = datetime.now()
-        self.locked_paths = []
+        self.locked_paths = set()
         self.progress_box_shown = False
         self.progress_box.manager = self
         self.transfers_event = None
@@ -80,14 +80,14 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.upload_settings = ''
         self.download_settings = ''
         self.timeshift = 0
-        self.existing_files = []
         self.upload_settings_popup = None
         self.download_settings_popup = None
-        for _ in range(self.max_connections):
-            self.thread_queue.put('.')
+        self.transfers_stopped = False
+        #for _ in range(self.max_connections):
+        #    self.thread_queue.put('.')
 
     def run(self):
-        self.start_transfers()
+
         self.get_transfer_settings()
         while not self.tasks_queue.empty():
             task = self.tasks_queue.get()
@@ -95,23 +95,15 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                 if stat.S_ISDIR(os.lstat(task['src_path']).st_mode):
                     self.local_walk(task)
                 else:
-
-                    self.transfers.put({**task,
-                                        'dir': False,
-                                        'settings': self.upload_settings})
+                    self.transfers.put({**task, 'dir': False})
 
             elif task['type'] == 'download':
                 if stat.S_ISDIR(task['attrs'].st_mode):
-                    self.transfers.put({**task,
-                                        'dir': True,
-                                        'settings': self.upload_settings})
+                    self.transfers.put({**task, 'dir': True})
                 else:
                     name = os.path.split(task['src_path'])[1]
                     task['dst_path'] = os.path.join(task['dst_path'], name)
-                    settings = self.download_settings if not task.get('settings') else self.download_settings
-                    self.transfers.put({**task,
-                                        'dir': False,
-                                        'settings': settings})
+                    self.transfers.put({**task, 'dir': False})
 
             elif task['type'] == 'open':
                 self.transfers.put({**task})
@@ -124,8 +116,10 @@ class TransferManager(Thread, metaclass=SingletonMeta):
 
             elif task['type'] == 'search':
                 self.transfers.put({**task})
-
-    def add_to_existing_files(self, data, bar, thread):
+        self.start_transfers()
+    
+    def existing_files_popup(self, data, bar, thread):
+        print('EXISTING FILES POPUP', self.upload_settings_popup, self.download_settings_popup)
         if data['type'] == 'upload':
             if not self.upload_settings_popup:
                 self.upload_settings_popup = CurrentTransferSettings(manager=self)
@@ -147,26 +141,34 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         try:
             self.upload_settings = config.get('DEFAULTS', 'upload')
         except Exception:
-            self.upload_settings = 'Ask everytime'
+            self.upload_settings = 'opt1'
         try:
             self.download_settings = config.get('DEFAULTS', 'download')
         except Exception:
-            self.download_settings = 'Ask everytime'
+            self.download_settings = 'opt1'
         try:
             self.timeshift = int(config.get('DEFAULTS', 'timeshift'))
         except Exception:
             self.timeshift = 0
 
     def start_transfers(self):
-        if not self.transfers_event:
-            self.transfers_event = Clock.schedule_interval(self.next_transfer, self.delay)
+        self.transfers_stopped = False
+        for _ in range(self.max_connections):
+            self.thread_queue.put('.')
+            self.next_transfer()
+        #if not self.transfers_event:
+        #    self.transfers_event = Clock.schedule_interval(self.next_transfer, self.delay)
 
     def stop_transfers(self, cause=None):
         cause = cause if cause else ''
         logger.info(f'Thread manager stop. {cause}')
-        if self.transfers_event:
-            self.transfers_event.cancel()
-            self.transfers_event = None
+        self.transfers_stopped = True
+        while not self.thread_queue.empty():
+            self.thread_queue.get()
+
+        #if self.transfers_event:
+        #    self.transfers_event.cancel()
+        #    self.transfers_event = None
 
     def reconnect(self, _=None):
         sftp = self.connect()
@@ -212,23 +214,20 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                 return None
             return sftp
 
-    def locked_path(self, dst_path):
-        if dst_path in self.locked_paths:
-            return True
-        else:
-            return False
-
     def connection_error(self):
         self.stop_transfers()
         self.reconnect()
 
-    def next_transfer(self, _):
+    def next_transfer(self, _=None):
+        print('NEXT TRANSFER', self.transfers_stopped)
         """
         Runs new thread if not too many threads are currently running.
         :param _:
         :return:
         """
-        if not self.thread_queue.empty() and not self.transfers.empty():
+        if self.transfers_stopped:
+            return
+        if not self.transfers.empty():
             self.time = datetime.now()
             self.thread_queue.get()
             transfer = self.transfers.get()
@@ -239,6 +238,9 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                 self.transfers.put(transfer)
                 return
             if transfer['type'] == 'upload':
+                settings = self.upload_settings if not transfer.get('settings') else transfer.get('settings')
+                transfer['settings'] = settings
+
                 if transfer['dir']:
                     thread = MkRemoteDirs(transfer, manager=self, sftp=sftp)
                 else:
@@ -252,6 +254,8 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                         bar = transfer['bar']
                     thread = Upload(transfer, manager=self, bar=bar, sftp=sftp)
             elif transfer['type'] == 'download':
+                settings = self.download_settings if not transfer.get('settings') else transfer.get('settings')
+                transfer['settings'] = settings
                 if transfer['dir']:
                     thread = RemoteWalk(data=transfer, manager=self, sftp=sftp)
                 else:
@@ -302,10 +306,32 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         if self.transfers.empty() and self.thread_queue.empty():
             self.stop_transfers()
 
+    def locked_path(self, dst_path):
+        if dst_path in self.locked_paths:
+            return True
+        else:
+            return False
+
+    #def lock_destination(self, destination, instance):
+    #    if destination not in self.locked_destinations:
+    #
+    #        confirm_popup(callback=self.directory_created,
+    #                      text=f'You are going to transfer file to destination directory that already exists'
+    #                           f'and it is a file.'
+    #                           f''
+    #                           f'Do you agree to remove file in order to create a directory and transfer '
+    #                           f'all files?',
+    #                      title='I\'no idea how to explain you that case.',
+    #                      _args=[destination, instance]
+    #                      )
+    #
+    #    self.locked_destinations.add(destination)
+
     def directory_created(self, destination, instance):
+
         """
         When during upload program try to make a dir but it already exists and it is a file.
-        If user agree to delete the file and create a directory we must renew all file transfers
+        If user agree to delete the file and create a directory restart all file transfers
         to that directory
         """
 

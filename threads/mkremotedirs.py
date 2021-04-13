@@ -54,7 +54,7 @@ class MkRemoteDirs(Thread):
                 attrs = get_dir_attrs(full_path, self.sftp)
             except OSError:
                 ex_log(f'Could not make dir {full_path}. Detected regular file.')
-                self.manager.locked_paths.append(full_path)
+                self.manager.locked_paths.add(full_path)
                 confirm_popup(callback=self.delete_file,
                               movable=True,
                               _args=full_path,
@@ -72,4 +72,4 @@ class MkRemoteDirs(Thread):
         else:
             self.manager.sftp_queue.put(self.sftp)
             self.manager.thread_queue.put('.')
-            self.manager.next_transfer('.')
+            self.manager.next_transfer()

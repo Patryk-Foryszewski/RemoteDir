@@ -2,7 +2,7 @@ from threading import Thread
 import os
 from threads.download import Download
 from kivy.clock import Clock
-from common import mk_logger, thumbnails, progress_popup
+from common import mk_logger, thumbnails, progress_popup, cache_path
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -14,7 +14,6 @@ ex_log = ex_log.exception
 class Open(Thread):
     def __init__(self, data, manager, sftp):
         super().__init__()
-        from common_vars import cache_path
         self.cache_path = cache_path
         self.data = data
         self.src_path = data['src_path']
@@ -51,7 +50,7 @@ class Open(Thread):
         self.bar = self.manager.progress_box.mk_bar()
         self.manager.progress_box.add_bar(self.bar)
         os.makedirs(self.cache_path, exist_ok=True)
-        self.data.update({'overwrite': True})
+        self.data.update({'settings': 'opt3'})
         thread = Download(data=self.data,
                           manager=self.manager,
                           bar=self.bar,
@@ -85,7 +84,6 @@ class Open(Thread):
 
     def file_closed(self):
         """Function to check if file is closed. If so stop self.check_event"""
-        print('FILE CLOSED?', self.file)
         # noinspection PyBroadException
         try:
             os.rename(self.dst_path, self.dst_path)
@@ -101,7 +99,8 @@ class Open(Thread):
                     'dir': False,
                     'overwrite': True,
                     'thumbnails': self.thumbnails,
-                    'preserve_mtime': True}
+                    'preserve_mtime': True,
+                    'settings': 'opt3'}
 
         self.upload_progress = self.bar.progress
         self.bar.progress_callback = self.on_upload_progress

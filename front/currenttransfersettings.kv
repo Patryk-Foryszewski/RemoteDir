@@ -43,7 +43,7 @@
             spacing: 1
 
             AsyncImage:
-                source: 'img/file_icon.png'
+                source: app.img_path('file_icon.png')
                 size_hint: None, None
                 size: source.width * .3, source.height * .68
                 pos_hint: {'x': .02, 'center_y': .65}
@@ -79,11 +79,10 @@
                 pos_hint: {'x': .02, 'top': .98}
 
             AsyncImage:
-                source: 'img/file_icon.png'
+                source: app.img_path('file_icon.png')
                 size_hint: None, None
                 size: source.width * .3, source.height * .68
                 pos_hint: {'x': .02, 'center_y': .65}
-
 
             BoxLayout:
                 orientation: 'vertical'
@@ -103,7 +102,6 @@
             CS_Label
                 text: root.target['path']
                 text_size: self.size
-
 
 
     RelativeLayout:
@@ -132,10 +130,9 @@
                     CheckBox:
                         group: 'current_setting'
                         active: True
-                        on_state: if self.active: root.set_option('Skip')
-
+                        on_state: if self.active: root.set_option('opt2')
                     Label:
-                        text: 'Skip'
+                        text: root.tsm._option('opt2')
                         text_size: self.size
                         halign: 'left'
                         width: 100
@@ -147,25 +144,9 @@
                     spacing: root.spacing2
                     CheckBox:
                         group: 'current_setting'
-                        on_state: if self.active: root.set_option('Overwrite')
+                        on_state: if self.active: root.set_option('opt3')
                     Label:
-                        text: 'Overwrite'
-                        text_size: self.size
-                        halign: 'left'
-                        width: 100
-
-                BoxLayout:
-                    id: op3
-                    size_hint_y: None
-                    height: 20
-                    m_text: 'Overwrite if source is newer'
-                    spacing: root.spacing2
-                    CheckBox:
-                        group: 'current_setting'
-                        on_state: if self.active: root.set_option(op3.m_text)
-                        #on_state: root.download_setting = op3.m_text
-                    Label:
-                        text: op3.m_text
+                        text: root.tsm._option('opt3')
                         text_size: self.size
                         halign: 'left'
                         width: 100
@@ -176,9 +157,22 @@
                     spacing: root.spacing2
                     CheckBox:
                         group: 'current_setting'
-                        on_state: if self.active: root.set_option('Overwrite if size is different')
+                        on_state: if self.active: root.set_option('opt4')
                     Label:
-                        text: 'Overwrite if size is different'
+                        text: root.tsm._option('opt4')
+                        text_size: self.size
+                        halign: 'left'
+                        width: 100
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: 20
+                    spacing: root.spacing2
+                    CheckBox:
+                        group: 'current_setting'
+                        on_state: if self.active: root.set_option('opt5')
+                    Label:
+                        text: root.tsm._option('opt5')
                         text_size: self.size
                         halign: 'left'
                         width: 100
@@ -210,10 +204,9 @@
                         id: ask
                         group: 'range'
                         active: True
-                        on_state: if self.active: root.set_range('Ask everytime')
-
+                        on_state: if self.active: root.set_range('rng1')
                     Label:
-                        text: 'Ask everytime'
+                        text: root.tsm._range('rng1')
                         text_size: self.size
                         halign: 'left'
                         width: 100
@@ -225,9 +218,9 @@
                     CheckBox:
                         id: session_uploads
                         group: 'range'
-                        on_state: if self.active: root.set_range('Apply only for this session')
+                        on_state: if self.active: root.set_range('rng2')
                     Label:
-                        text: 'Apply only for this session'
+                        text: root.tsm._range('rng2')
                         text_size: self.size
                         halign: 'left'
                         width: 100
@@ -240,9 +233,9 @@
                     CheckBox:
                         id: default_uploads
                         group: 'range'
-                        on_state: if self.active: root.set_range('Set as default')
+                        on_state: if self.active: root.set_range('rng3')
                     Label:
-                        text: 'Set as default'
+                        text: root.tsm._range('rng3')
                         text_size: self.size
                         halign: 'left'
                         width: 100
@@ -264,7 +257,7 @@
                 halign: 'right'
                 text_size: self.size
             Image:
-                source: 'img/go_back.png'
+                source: app.img_path('go_back.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.previous_file()
@@ -274,7 +267,7 @@
                 halign: 'center' 
                 text_size: self.size
             Image:
-                source: 'img/go_forward.png'
+                source: app.img_path('go_forward.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.next_file()

@@ -59,7 +59,7 @@ class ThumbnailGenerator(Thread):
             logger.info(f'Thumbnail for {ext} created with Image')
             self.ok = True
             return
-
+    
         try:
             from moviepy.editor import VideoFileClip
             clip = VideoFileClip(self.src_path)
@@ -72,7 +72,7 @@ class ThumbnailGenerator(Thread):
             logger.info(f'Thumbnail for {ext} created with VideoFileClip')
             self.ok = True
             return
-
+    
         from rawpy._rawpy import LibRawNoThumbnailError
         from rawpy._rawpy import LibRawUnsupportedThumbnailError
         from rawpy._rawpy import LibRawIOError

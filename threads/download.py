@@ -16,7 +16,7 @@ class Download(Thread):
         self.data = data
         self.src_path = data['src_path']
         self.dst_path = data['dst_path']
-        self.dirpath, self.filename = os.path.split(self.src_path)
+        self.dirpath, self.filename = os.path.split(self.dst_path)
         self.manager = manager
         self.sftp = sftp
         self.bar = bar
@@ -25,11 +25,12 @@ class Download(Thread):
         self.waiting_for_directory = None
         self.callback = None
         self.settings = data['settings']
+        print('DOWNLOAD', self.dst_path, self.dirpath)
 
     def run(self):
+
         logger.info(f'Downloading {self.filename}')
         self.bar.my_thread = self
-
         self.bar.set_values(f'{"Downloading" if not self.data.get("overwrite") else "Overwriting"} {self.filename}')
         try:
             if self.prepare_to_get():
@@ -39,12 +40,13 @@ class Download(Thread):
                               preserve_mtime=self.preserve_mtime)
 
         except FileExistsError as fe:
+            print('FILE EXISTS ERROR', fe)
             fe = str(fe)
             if fe == 'opt1':
                 text = f'File {self.dst_path} already exists'
                 logger.info(text)
                 self.bar.file_exists_error(text=text)
-                self.manager.add_to_existing_files(data=self.data, bar=self.bar, thread=self)
+                self.manager.existing_files_popup(data=self.data, bar=self.bar, thread=self)
 
             elif fe == 'opt2':
                 self.skip()
@@ -79,6 +81,7 @@ class Download(Thread):
         finally:
             self.manager.thread_queue.put('.')
             self.manager.sftp_queue.put(self.sftp)
+            self.manager.next_transfer()
 
     def exists(self):
         if is_local_file(self.dirpath):
@@ -97,20 +100,24 @@ class Download(Thread):
             ex_log(f'Could not compare file attrs {ex}')
             return None, None
         else:
+            self.data['source_attrs'] = source_attrs
+            self.data['target_attrs'] = target_attrs
             return source_attrs, target_attrs
 
     def prepare_to_get(self):
-        if os.path.exists(self.src_path):
-            print('PREPARE TO GET', self.settings, self.data.get('overwrite'))
-
+        if not os.path.exists(self.dirpath):
+            os.makedirs(self.dirpath)
+        if os.path.exists(self.dst_path):
             if self.data.get('overwrite'):
                 os.remove(self.src_path)
                 return True
 
             elif self.settings == 'opt1':
+                self.get_attrs()
                 raise FileExistsError('opt1')
 
             elif self.settings == 'opt2':
+                self.get_attrs()
                 raise FileExistsError('opt2')
 
             elif self.settings == 'opt3':
@@ -128,7 +135,7 @@ class Download(Thread):
             elif self.settings == 'opt5':
                 remote_attrs, local_attrs = self.get_attrs()
                 if remote_attrs and remote_attrs.st_size != local_attrs.st_size:
-                    self.sftp.remove(self.full_remote_path)
+                    self.sftp.remove(self.dst_path)
                     return True
                 else:
                     raise FileExistsError('opt5')

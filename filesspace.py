@@ -2,6 +2,7 @@ from kivy.uix.stacklayout import StackLayout
 from kivy.graphics import Color, Rectangle
 from kivy.properties import ObjectProperty
 from kivy.core.window import Window
+from kivy.app import App
 from common import confirm_popup, menu_popup, posix_path, is_file, mk_logger, thumbnail_popup, hidden_files
 import win32clipboard as clipboard
 from filetile import FileTile
@@ -42,7 +43,8 @@ class FilesSpace(StackLayout):
         self.mark = None
         self.attrs_list = None
         self.touch = None
-        self.thumb = True
+        self.app = App.get_running_app()
+
 
     def get_file_index(self, file):
         return self.children.index(file)
@@ -76,7 +78,6 @@ class FilesSpace(StackLayout):
     def refresh_thumbnails(self):
         for file in self.children:
             file.set_thumbnail()
-
     def refresh_thumbnail(self, name):
 
         for file in self.children:
@@ -268,7 +269,7 @@ class FilesSpace(StackLayout):
 
             if len(self.marked_files) == 1:
                 buttons = ['Rename', 'Download', 'Open', 'Delete', 'File permissions']
-                if self.thumb:
+                if self.app.thumbnails:
                     buttons.append('Add Thumbnail')
 
             else:
@@ -306,7 +307,6 @@ class FilesSpace(StackLayout):
                             sftp=self.originator.sftp,
                             on_popup=self.on_popup,
                             on_popup_dismiss=self.on_popup_dismiss)
-
         elif option == 'File permissions':
             self.originator.chmod(file=self.touched_file)
 
@@ -319,9 +319,7 @@ class FilesSpace(StackLayout):
     def make_dir(self):
         i = 0
         for child in self.children:
-            print('NAME', child.filename)
             if 'New dir' in child.filename:
-                print('     New dir in')
                 i += 1
         if i:
             name = f'New dir {i}'

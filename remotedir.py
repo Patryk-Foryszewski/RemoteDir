@@ -2,16 +2,17 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, ListProperty
 from kivy.core.window import Window
 from kivy.clock import Clock
+from kivy.app import App
 from colors import colors
 from common import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path, find_thumb, thumbnails
 from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir, thumbnail_ext
 from common import thumb_dir_path, pure_windows_path
-import re
 from sftp.connection import Connection
 from exceptions import *
 from threads import TransferManager
 import queue
 import os
+import sys
 from paramiko.ssh_exception import SSHException, AuthenticationException, BadAuthenticationType
 import copy
 from functools import partial
@@ -46,7 +47,7 @@ class RemoteDir(BoxLayout):
         self.childs_to_light = None
         self.files_space = None
         self.progress_box = None
-        self.thumbnails = thumbnails()
+        self.app = App.get_running_app()
         self.reconnection_tries = 0
         self.callback = None
         self.current_history_index = 0
@@ -61,6 +62,10 @@ class RemoteDir(BoxLayout):
         self.base_path = ''
         self.current_path = default_remote()
         self.connect()
+        if self.sftp and len(sys.argv) > 1:
+            Window.minimize()
+            for file in sys.argv[1:]:
+                self.external_dropfile(file.encode(), self.current_path)
 
     def absolute_path(self, relative_path):
         return posix_path(self.base_path, relative_path)
@@ -116,7 +121,7 @@ class RemoteDir(BoxLayout):
         Checks if thumbnails are up to date with the one on remote disk.
         If thumb is not up to date or does not exist download thumbnail from remote.
         """
-        if not self.thumbnails:
+        if not thumbnails():
             return
         remote_thumbs_path = posix_path(self.get_current_path(), thumb_dir)
         # noinspection PyBroadException
@@ -136,7 +141,6 @@ class RemoteDir(BoxLayout):
 
             else:
                 downloads.append(file.filename)
-
         if downloads:
             src_path = posix_path(self.get_current_path(), thumb_dir)
             task = {'type': 'thumbdownload',
@@ -170,7 +174,7 @@ class RemoteDir(BoxLayout):
         _path = self.get_current_path()
         for attr in attrs:
             attr.path = _path
-            attr.thumbnail = self.thumbnails
+            attr.thumbnail = self.app.thumbnails
 
     def add_file(self, path=None, attrs=None, _=None, from_search=False):
         if path == self.get_current_path():
@@ -202,7 +206,7 @@ class RemoteDir(BoxLayout):
         task = {'type': 'search',
                 'text': text,
                 'path': self.get_current_path(),
-                'thumbnail': self.thumbnails,
+                'thumbnail': self.app.thumbnails,
                 'remote_dir': self,
                 'search_list': search_list}
 
@@ -229,7 +233,8 @@ class RemoteDir(BoxLayout):
             ex_log(f'Make dir exception {ex}')
             return False
         else:
-            attrs.path = self.get_current_path()
+
+            self.add_attrs([attrs])
             self.files_space.add_icon(attrs, new_dir=True)
 
     def file_size(self):
@@ -243,7 +248,7 @@ class RemoteDir(BoxLayout):
                    )
 
     def connect(self, popup=None, password=None):
-        print('REMOTE DIR', password)
+
         self.files_space.unbind_external_drop()
         if popup:
             popup.dismiss()
@@ -286,7 +291,7 @@ class RemoteDir(BoxLayout):
                                                             'message': f'{str(ae)}'})
 
         except SSHException as she:
-            ex_log(f'Connection exception, {she}')
+            logger.info(f'Connection exception, {she}')
             if 'not a valid' in str(she):
                 credential_popup(callback=self.connect, errors={'errors': ['private_key'],
                                                                 'message': f'{str(she)[0].upper()}{str(she)[1:]}'})
@@ -396,7 +401,7 @@ class RemoteDir(BoxLayout):
         task = {'type': 'upload',
                 'src_path': local_path,
                 'dst_path': destination,
-                'thumbnails': self.thumbnails}
+                'thumbnails': self.app.thumbnails}
 
         self.execute_sftp_task(task)
 
@@ -525,7 +530,7 @@ class RemoteDir(BoxLayout):
 
     def rename_thumbnail(self, old_path, old_name, new_path, new_name):
         # print('RENAME THUMBNAIL', old_path, old_name, new_path, new_name)
-        if self.thumbnails:
+        if self.app.thumbnails:
             from common import find_thumb
             old_local_thumbnail = find_thumb(old_path, old_name)
             if old_local_thumbnail:
@@ -657,7 +662,6 @@ class RemoteDir(BoxLayout):
         self.mouse_locked = False
 
     def chdir(self, path, add_to_history=True):
-        print('CHDIR', path)
         # noinspection PyBroadException
         try:
             self.sftp.chdir(path)

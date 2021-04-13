@@ -1,5 +1,5 @@
 import logging
-import os
+#import os
 import stat
 import binascii
 import winreg
@@ -7,7 +7,7 @@ import pathlib
 from hurry.filesize import size
 from datetime import datetime
 from os import path, environ, makedirs, listdir
-
+import sys
 
 def app_name():
     """Returns app name as dir name"""
@@ -136,10 +136,10 @@ def get_config():
 
     config = ConfigParser()
 
-    if not os.path.exists(config_file):
+    if not path.exists(config_file):
         raise ConfigNotFound
-    elif not os.path.exists(data_path):
-        os.makedirs(data_path)
+    elif not path.exists(data_path):
+        makedirs(data_path)
         raise ConfigNotFound
     else:
         config.read(config_file)
@@ -294,7 +294,7 @@ def info_popup(text=''):
 def get_progid(filename):
     # noinspection PyBroadException
     try:
-        ext = os.path.splitext(filename)[1]
+        ext = path.splitext(filename)[1]
         partial_key = r'Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\{}\UserChoice'.format(ext)
         with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER) as reg:
             with winreg.OpenKey(reg, partial_key) as key_object:
@@ -325,8 +325,8 @@ def unix_time(timestamp):
 
 
 def is_local_file(_path):
-    if os.path.exists(_path):
-        return stat.S_ISREG(os.stat(_path).st_mode)
+    if path.exists(_path):
+        return stat.S_ISREG(stat(_path).st_mode)
     else:
         return None
 
@@ -340,30 +340,30 @@ def remote_path_exists(_path, sftp):
 
 
 def local_path_exists(_path):
-    return os.path.exists(_path)
+    return path.exists(_path)
 
 
 def get_dir_attrs(_path, sftp):
     attrs = sftp.lstat(_path)
-    attrs.filename = os.path.split(_path)[1]
+    attrs.filename = path.split(_path)[1]
     attrs.longname = str(attrs)
     return attrs
 
 
 def file_ext(name):
-    return os.path.splitext(name)[1]
+    return path.splitext(name)[1]
 
 
 def filename(_path):
-    return os.path.split(_path)[1]
+    return path.split(_path)[1]
 
 
 def dst_path(_path):
-    return os.path.split(_path)[0]
+    return path.split(_path)[0]
 
 
 def thumb_name(src_path):
-    name = os.path.split(src_path)[1]
+    name = path.split(src_path)[1]
     return f'{name}.{thumbnail_ext}'
 
 
@@ -425,9 +425,9 @@ def find_thumb(dst_path, filename):
 
 
 def thumbnails():
-    config = get_config()
     # noinspection PyBroadException
     try:
+        config = get_config()
         enable_thumbnails = config.getboolean('SETTINGS', 'enable_thumbnails')
     except Exception:
         return False
@@ -468,6 +468,17 @@ def encrypt(text, password):
 
 def decrypt(text, _password):
     return crypto(text, _password, _decrypt=True)
+
+
+def resource_path(*args):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    base_path = getattr(sys, '_MEIPASS', path.dirname(path.abspath(__file__)))
+    return path.join(base_path, *args)
+
+
+def img_path(img):
+    """ Get absolute path to img resource, works for dev and for PyInstaller """
+    return path.join(resource_path('img'), img)
 
 
 class TransferSettingsMapper:

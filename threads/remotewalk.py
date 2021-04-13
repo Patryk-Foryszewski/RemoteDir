@@ -30,6 +30,7 @@ class RemoteWalk(Thread):
         finally:
             self.manager.thread_queue.put('.')
             self.manager.sftp_queue.put(self.sftp)
+            self.manager.next_transfer()
 
     def fcallback(self, file_path):
         dst = file_path[len(self.src_path):].split('/')
@@ -40,7 +41,7 @@ class RemoteWalk(Thread):
                 'dir': False,
                 'src_path': file_path,
                 'dst_path': relative_path,
-                'action': self.data['action']}
+                'settings': self.data['settings']}
         self.manager.put_transfer(task)
 
     def dcallback(self, dir_path):

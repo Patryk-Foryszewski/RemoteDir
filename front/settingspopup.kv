@@ -49,6 +49,7 @@
 
                 CheckBox:
                     id: enable_thumbnails
+                    on_state: app.thumbnails = True if self.state == 'down' else False
                 Label:
                     text: 'Enable thumbnails:'
                     text_size: self.size

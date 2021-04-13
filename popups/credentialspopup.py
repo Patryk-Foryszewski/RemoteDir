@@ -61,14 +61,12 @@ class CredentialsPopup(BoxLayout):
             self.ids.user_err.text = ''
             self.ids.server_err.text = ''
 
-
-
     def fill(self):
         # noinspection PyBroadException
         try:
             config = get_config()
-        except Exception:
-            pass
+        except Exception as ex:
+            ex_log(f'Could not read config {ex}')
         else:
             self.ids.server.text = config.get('CREDENTIALS', 'server')
             self.ids.user.text = config.get('CREDENTIALS', 'user')
@@ -78,10 +76,6 @@ class CredentialsPopup(BoxLayout):
             if self.encrypted_password:
                 self.ids.password.text = ''
                 self.ids.password.hint_text = '*' * 10
-
-
-
-
 
     def decrypt_password(self, encrypted):
         try:
@@ -290,11 +284,20 @@ class CredentialsPopup(BoxLayout):
         else:
             self.message = ''
             self.encrypted_password = encrypt(self.password, main_password).decode()
-            print('ENCRYPTED PASSWORD', self.encrypted_password)
             config = get_config()
             config.set('CREDENTIALS', 'password', self.encrypted_password)
             with open(config_file, 'w+') as f:
                 config.write(f)
+
+    def clear_main_password(self):
+        try:
+            config = get_config()
+            config.set('CREDENTIALS', 'password', '')
+            with open(config_file, 'w+') as f:
+                config.write(f)
+        except Exception as ex:
+            ex_log(f'Could not clear main password {ex}')
+            self.message = f'Could not clear main password {type(ex)}'
 
     def dismiss(self):
         self.popup.dismiss()

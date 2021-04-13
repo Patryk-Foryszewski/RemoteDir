@@ -56,6 +56,7 @@ class MenuPopup(ModalView):
         self.originator.on_popup_dismiss()
 
     def set_size(self):
+        print('MENU POPUP SET SIZE', self.forced_size)
         if self.forced_size:
             if self.forced_size[0]:
                 print('MENU POPUP WIDTH', self.forced_size[0])
@@ -71,8 +72,9 @@ class MenuPopup(ModalView):
             widest = max(widths)
             if widest > self.width:
                 self.width = widest + 6
-            for button in self.ids.buttons_space.children:
-                button.width = self.width
+
+            #for button in self.ids.buttons_space.children:
+            #    button.width = self.width
 
     def set_pos_hint(self):
 

@@ -36,4 +36,5 @@ class ThumbDownload(Thread):
 
         self.manager.thread_queue.put('.')
         self.manager.sftp_queue.put(self.sftp)
+        self.manager.next_transfer()
         self.callback()
