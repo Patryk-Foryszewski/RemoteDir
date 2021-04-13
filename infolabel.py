@@ -8,8 +8,8 @@ class InfoLabel(Label):
 
     def __init__(self, text, popup=None):
         super().__init__()
-        self.text = text
         self.popup = popup
+        self.text = text
 
     def dismiss_me(self, text):
         self.text = text
@@ -19,5 +19,8 @@ class InfoLabel(Label):
             Clock.schedule_once(dismiss, 3)
 
     def on_text(self, *args):
-        self.width = self.text_size[0] + 10
+        pass
+
+        # self.size = self.texture_size
+        # self.width = self.text_size[0] + 10
 

@@ -1,12 +1,12 @@
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import StringProperty, ListProperty
+from kivy.properties import StringProperty, ListProperty, BooleanProperty
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.app import App
 from colors import colors
 from common import credential_popup, menu_popup, settings_popup, confirm_popup, posix_path, find_thumb, thumbnails
 from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir, thumbnail_ext
-from common import thumb_dir_path, pure_windows_path
+from common import thumb_dir_path, pure_windows_path, info_popup
 from sftp.connection import Connection
 from exceptions import *
 from threads import TransferManager
@@ -28,6 +28,7 @@ ex_log = ex_log.exception
 class RemoteDir(BoxLayout):
     bcolor = ListProperty()
     current_path = StringProperty()
+    mouse_locked = BooleanProperty()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -40,7 +41,7 @@ class RemoteDir(BoxLayout):
         self.current_path = ''
         self.marked_files = set()
         self.files_queue = queue.LifoQueue()
-        self.paths_history = []
+        self.history = []
         self.tasks_queue = None
         self.connection = None
         self._y = None
@@ -53,10 +54,7 @@ class RemoteDir(BoxLayout):
         self.current_history_index = 0
 
     def on_kv_post(self, base_widget):
-        self.childs_to_light = [self.ids.current_path, self.ids.search, self.ids.settings,
-                                self.ids.sort_menu, self.ids.sort_files_up, self.ids.sort_files_down,
-                                self.ids.file_size]
-
+        self.childs_to_light = [self.ids.current_path, self.ids.search]
         self.files_space = self.ids.files_space
         self.progress_box = self.ids.progress_box
         self.base_path = ''
@@ -68,25 +66,44 @@ class RemoteDir(BoxLayout):
                 self.external_dropfile(file.encode(), self.current_path)
 
     def absolute_path(self, relative_path):
+        """
+        Returns full path of path user logs into and given relative path
+        :param relative_path:
+        """
+
         return posix_path(self.base_path, relative_path)
 
     def relative_path(self, path):
+        """
+        Cuts out give full path to working diectory with path user logs into.
+        :param path:
+        :return:
+        """
         return path.lstrip(self.base_path)
 
     def on_current_path(self, *_):
+        """
+        React to current path changes, formats the path and shows it in the text input.
+        """
+
         if self.current_path:
             self.ids.current_path.text = f'/{self.relative_path(self.current_path)}'
         else:
             self.ids.current_path.text = ''
 
-
-
     def chdir_from_input(self, path):
+        """
+        Change directory to path user type into text input.
+        :param path:
+        :return:
+        """
+
         path = path.lstrip('/')
         path = path.lstrip('\\')
         self.chdir(posix_path(self.base_path, path))
 
     def on_mouse_move(self, _, mouse_pos):
+
         if not self.mouse_locked:
 
             for child in self.childs_to_light:
@@ -107,7 +124,7 @@ class RemoteDir(BoxLayout):
 
     def on_touch_move(self, touch):
         # moves file_space up or down depends to touch_move position
-        self._y = self.ids.space_scroller.vbar[0] * self.ids.files_space.height + touch.y
+        self._y = self.ids.space_scroller.vbar[0] * self.files_space.height + touch.y
         if touch.y / self.ids.space_scroller.height > 0.9 and self.ids.space_scroller.scroll_y < 1:
             self.ids.space_scroller.scroll_y += 0.1
 
@@ -119,7 +136,8 @@ class RemoteDir(BoxLayout):
     def compare_thumbs(self):
         """
         Checks if thumbnails are up to date with the one on remote disk.
-        If thumb is not up to date or does not exist download thumbnail from remote.
+        If thumb is not up to date or does not exist download thumbnail
+        and refresh icon.
         """
         if not thumbnails():
             return
@@ -151,6 +169,14 @@ class RemoteDir(BoxLayout):
             self.execute_sftp_task(task)
 
     def list_dir(self, attrs_list=None):
+        """
+        Lists files of current working directory if attrs_list is not given. If so it fills
+        file space with given attrs_lists. Attrs_list comes from functions sorting functions
+        so there is no need to list remote directory again.
+        :param attrs_list:
+        :return:
+        """
+
         # print('DIRS', self.sftp.listdir_attr())
         self.compare_thumbs()
         #popup, content = info_popup(f'Listing {file_name(self.get_current_path())} directory')
@@ -171,19 +197,38 @@ class RemoteDir(BoxLayout):
         self.files_space.fill(attrs_list)
 
     def add_attrs(self, attrs):
+        """
+        Adds new attrs, posix path and thumbnail agreement to given list
+        :param attrs: 'list' of files attributes
+        """
+
         _path = self.get_current_path()
         for attr in attrs:
             attr.path = _path
             attr.thumbnail = self.app.thumbnails
 
     def add_file(self, path=None, attrs=None, _=None, from_search=False):
-        if path == self.get_current_path():
+        """
+        Adds file to view. If file comes as search outcome it already has path attr added.
+        Do not overwrite it.
+        :param path:
+        :param attrs: object,  attrs of fille
+        :param from_search: Boolean. Tells if file is search outcome.
+        :return:
+        """
+
+        if self.is_current_path(path):
             self.add_attrs([attrs])
             self.files_space.add_file(attrs)
         elif from_search:
             self.files_space.add_file(attrs)
 
     def sort_menu(self):
+        """
+        Sort files by given option.
+        :return:
+        """
+
         buttons = ['Name', 'Date added', 'Date modified', 'Size']
         menu_popup(originator=self,
                    buttons=buttons,
@@ -194,13 +239,30 @@ class RemoteDir(BoxLayout):
         self.on_popup()
 
     def sort_files(self, reverse=False):
+        """
+        Sorts files in descending or ascending order.
+        :param reverse:
+        :return:
+        """
+
         self.files_space.reverse = reverse
         self.files_space.sort_files()
 
     def clear_file_space(self):
+        """
+        Removes all files from files space.
+        :return:
+        """
+
         self.files_space.clear_widgets()
 
     def search(self, text):
+        """
+        Performs search task with given text. File tree starts form current path.
+        :param text: str
+        :return:
+        """
+
         search_list = []
         self.clear_file_space()
         task = {'type': 'search',
@@ -215,6 +277,10 @@ class RemoteDir(BoxLayout):
         self.add_act_to_history({'action': 'search', 'go_to': search_list, 'text': text})
 
     def view_menu(self):
+        """
+        Sets file icon type.
+        """
+
         buttons = ['Tiles', 'Details']
         menu_popup(originator=self,
                    buttons=buttons,
@@ -296,6 +362,8 @@ class RemoteDir(BoxLayout):
                 credential_popup(callback=self.connect, errors={'errors': ['private_key'],
                                                                 'message': f'{str(she)[0].upper()}{str(she)[1:]}'})
             else:
+                content, popup = info_popup(she)
+                content.dismiss_me()
                 self.reconnect()
 
         except FileNotFoundError:
@@ -410,14 +478,12 @@ class RemoteDir(BoxLayout):
         return act['action']
 
     def show_history(self, widget):
-        print('HISTORY', self.paths_history)
         prepared = []
         go_to = []
         index_map = {}
         index = 1
-        for _index, act in enumerate(self.paths_history):
+        for _index, act in enumerate(self.history):
             action = self.get_history_action(act)
-            print('GO TO', act['go_to'], act['go_to'] in go_to )
             if act['go_to'] in go_to:
                 continue
             go_to.append(act['go_to'])
@@ -426,7 +492,6 @@ class RemoteDir(BoxLayout):
             elif action == 'listed':
                 path = self.relative_path(act["go_to"])
                 prepared.append(f'{index} {path if path else "Default path"}')
-            print('PREPARED', prepared)
             index_map[index] = _index
             index += 1
 
@@ -443,36 +508,60 @@ class RemoteDir(BoxLayout):
         h_index = int(choice.split(' ')[0])
         p_index = self.history_popup.index_map[h_index]
         self.current_history_index = p_index
-        self.list_dir_from_history(self.paths_history[p_index])
-        #self.paths_history.insert()
+        self.list_dir_from_history(self.history[p_index])
 
     def add_act_to_history(self, act):
-        self.paths_history.append(act)
+        """
+        Appends history of visited paths and searches.
+        :param act: Dictionary 'action' - tells what action was performed, like list remote directory
+                                          or searching.
+                               'go_to' path to list again or list of searched files.}
+        """
+        self.history.append(act)
 
     def go_back(self):
+        """
+        Goes back to previous history act
+        """
+
         if self.current_history_index > 0:
             self.current_history_index -= 1
-            self.list_dir_from_history(self.paths_history[self.current_history_index])
+            self.list_dir_from_history(self.history[self.current_history_index])
 
     def go_forward(self):
-        if self.current_history_index < len(self.paths_history)-1:
+        """
+        Goes forward to next history act
+        """
+
+        if self.current_history_index < len(self.history)-1:
             self.current_history_index += 1
-            self.list_dir_from_history(self.paths_history[self.current_history_index])
+            self.list_dir_from_history(self.history[self.current_history_index])
 
     def list_dir_from_history(self, act):
-        print('HISTORY ACT', act)
+        """
+        Checks action and lists dir of given path or fills with searching outcome.
+
+        """
         action = act['action']
         if action == 'listed':
-            self.chdir(act['go_to'], add_to_history=False)
+            self.chdir(act['go_to'])
         elif action == 'search':
             self.current_path = ''
             self.list_dir(attrs_list=act['go_to'])
 
     def get_cwd(self):
+        """
+        :return: Current Working Directory
+        """
+
         cwd = self.sftp.getcwd()
         return cwd if cwd else ""
 
     def settings(self):
+        """
+        Shows Settings Popup with list of options
+        """
+
         self.on_popup()
         menu_popup(widget=self.ids.settings,
                    originator=self,
@@ -483,6 +572,10 @@ class RemoteDir(BoxLayout):
                    )
 
     def choice(self, choice):
+        """
+        Callback for Settings Popup.
+        """
+
         self.on_popup_dismiss()
         if choice == 'Credentials':
             credential_popup(auto_dismiss=True)
@@ -492,12 +585,33 @@ class RemoteDir(BoxLayout):
             TransferSettings()
 
     def on_popup(self, *_):
+        """
+        Lock mouse when popup is shown so moving files, lighting widgets etc stops working
+        """
+
         self.mouse_locked = True
 
+    def on_popup_dismiss(self, *_):
+        """
+        Unlocks mouse when popup is dismissed
+        """
+
+        self.mouse_locked = False
+
+
     def remove_from_view(self, file):
+        """
+        Removes given file from view.
+        :param file: Instance of Icons wigdets like FileTile or FileDetails
+        """
+
         self.files_space.remove_file(file)
 
     def remove(self, file):
+        """
+        Removes given file from remote disk and if removed succesfully removes from view.
+        :param file: Instance of Icons wigdets like FileTile or FileDetails
+        """
         cwd = self.sftp.getcwd()
         path = posix_path(cwd if cwd else '.', file.filename)
         if file.file_type == 'dir':
@@ -517,6 +631,12 @@ class RemoteDir(BoxLayout):
                 self.remove_from_view(file)
 
     def get_file_attrs(self, path):
+        """
+        Gets remote file attrs.
+        :param path: posix_path to remote file.
+        :return:
+        """
+
         # noinspection PyBroadException
         try:
             attrs = self.sftp.lstat(path)
@@ -529,6 +649,12 @@ class RemoteDir(BoxLayout):
             return attrs
 
     def rename_thumbnail(self, old_path, old_name, new_path, new_name):
+        """
+        If user has enabled thumbnails they has be renamed when file is renamed.
+        :param path: posix_path to remote file.
+        :return:
+        """
+
         # print('RENAME THUMBNAIL', old_path, old_name, new_path, new_name)
         if self.app.thumbnails:
             from common import find_thumb
@@ -537,10 +663,7 @@ class RemoteDir(BoxLayout):
                 new_name = f'{new_name}.{thumbnail_ext}'
                 old_name = f'{old_name}.{thumbnail_ext}'
                 new_thumb_dir_path = thumb_dir_path(new_path)
-                # print('NEW THUMB DIR PATH', new_thumb_dir_path)
                 new_local_thumbnail = pure_windows_path(new_thumb_dir_path, new_name)
-                # print('     OLD LOCAL THUMBNAIL', old_local_thumbnail)
-                # print('     NEW LOCAL THUMBNAIL', new_local_thumbnail)
                 try:
                     if os.path.exists(new_local_thumbnail):
                         os.remove(new_local_thumbnail)
@@ -554,9 +677,6 @@ class RemoteDir(BoxLayout):
                 old_remote_thumbnail = posix_path(old_path, thumb_dir, old_name)
                 path_to_remote_thumb = posix_path(new_path, thumb_dir)
                 new_remote_thumbnail = posix_path(path_to_remote_thumb, new_name)
-                # print('     OLD REMOTE THUMBNAIL', old_remote_thumbnail)
-                # print('     PATH TO REMOTE THUMB', path_to_remote_thumb)
-                # print('     NEW REMOTE THUMBNAIL', new_remote_thumbnail)
                 try:
                     path_to_remote_thumb = posix_path(new_path, thumb_dir)
                     if not self.sftp.exists(path_to_remote_thumb):
@@ -568,7 +688,12 @@ class RemoteDir(BoxLayout):
                     ex_log('Failed to rename remote thumbnail', ex)
 
     def rename_file(self, full_old_path, full_new_path, file):
-
+        """
+        Renames remote file
+        :param full_old_path: posix path to file
+        :param full_new_path: posix path with new name
+        :param file: instance of FileTile, FileDetails etc
+        """
         old_path, old_name = os.path.split(full_old_path)
         new_path, new_name = os.path.split(full_new_path)
         if not self.sftp.exists(full_new_path):
@@ -581,7 +706,7 @@ class RemoteDir(BoxLayout):
                 logger.info(f'File renamed from {file.filename} to {os.path.split(new_name)[1]}')
                 self.files_space.remove_file(file)
                 # print('     CHECK IF CURRENT PATH', new_path, '|||', self.current_path, new_path == self.current_path )
-                if new_path == self.get_current_path():
+                if self.is_current_path(new_path):
                     attrs = self.get_file_attrs(full_new_path)
                     if attrs:
                         self.add_attrs([attrs])
@@ -606,9 +731,9 @@ class RemoteDir(BoxLayout):
         If user tries to rename file to name that already exists in current directory
         this method gives ability to remove existing file and rename file.
 
-        :param popup:
-        :param content:
-        :param answer:
+        :param popup: instance of Popup
+        :param content: instance of ConfirmPopup with arguments added in 'rename_file' method.
+        :param answer: user answer, 'yes' or 'no'
         :return:
         """
         if answer == 'yes':
@@ -625,32 +750,18 @@ class RemoteDir(BoxLayout):
             popup.dismiss()
 
     def rmdir(self, remote_path, file):
+        """
+        Removes remote directory using thread.
+        :param remote_path:
+        :param file:
+        :return:
+        """
+
         task = {'type': 'remove_remote',
                 'remote_path': remote_path,
                 'on_remove': partial(self.files_space.remove_file, file),
                 'progress_box': self.progress_box}
         self.execute_sftp_task(task)
-
-        # try:
-        #     for f in self.sftp.listdir_attr(path):
-        #         rpath = posix_path(path, f.filename)
-        #         if stat.S_ISDIR(f.st_mode):
-        #             self.rmdir(rpath)
-        #         else:
-        #             rpath = posix_path(path, f.filename)
-        #             self.sftp.remove(rpath)
-        # except OSError as ose:
-        #     if ose == 'Socket is closed':
-        #         self.callback = partial(self.rmdir, path)
-        #         self.connect()
-        #
-        # except Exception as ex:
-        #     ex_log(f'Failed to remove directory {ex}')
-        #     return False
-        # else:
-        #     logger.info(f'Succesfully removed file {os.path.split(path)[1]}')
-        #     self.sftp.rmdir(path)
-        #     return True
 
     def transfer_start(self):
         self.progress_box.transfer_start()
@@ -658,10 +769,13 @@ class RemoteDir(BoxLayout):
     def transfer_stop(self):
         self.progress_box.transfer_stop()
 
-    def on_popup_dismiss(self, *_):
-        self.mouse_locked = False
+    def chdir(self, path):
+        """
+        Change current working directory to given path. If path was not visited earlier adds
+        act to history.
+        :param path: posix path to be listed
+        """
 
-    def chdir(self, path, add_to_history=True):
         # noinspection PyBroadException
         try:
             self.sftp.chdir(path)
@@ -681,22 +795,37 @@ class RemoteDir(BoxLayout):
         else:
             self.list_dir()
             self.current_path = path
-            if add_to_history:
+            for act in self.history:
+                if act['action'] == 'listed' and act['go_to'] == self.get_current_path():
+                    break
+            else:
                 self.add_act_to_history({'action': 'listed', 'go_to': self.get_current_path()})
 
             return True
 
     def is_current_path(self, path):
+        """
+        Checks if given path is current path
+        :param path: posix path of remote
+        :return: True if give path is current path
+        """
         return path == self.get_current_path()
 
     def get_current_path(self):
+        """
+        Returns current working directory.
+
+        """
+
         current = self.sftp.getcwd()
         return current if current else posix_path()
 
-    def uploaded(self, path, attrs):
-        pass
-
     def open_file(self, file):
+        """
+        Opens file if file or lists directory if given file type is direcotry.
+        :param file: instance of FileTile, FileDetails etc.
+        """
+
         full_path = posix_path(file.attrs.path, file.filename)
         if file.file_type == 'dir':
             self.chdir(full_path)

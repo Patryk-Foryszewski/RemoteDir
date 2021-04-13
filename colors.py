@@ -5,7 +5,7 @@ colors = {
         'main_bcolor': get_color_from_hex('#fcfcfc'),
         'active_bcolor': get_color_from_hex('#fcfcfc'),
         'fbx_active_bcolor': get_color_from_hex('#e5e5ff'),
-        'unactive_bcolor': get_color_from_hex('#fcfcfc'),
+        'unactive_bcolor': get_color_from_hex('#ececec'),
         'context_menu': get_color_from_hex('#080808'),
         'context_menu_normal_btn': get_color_from_hex('#b9d1ea'),
         'context_menu_active_btn': get_color_from_hex('#efd1ea'),

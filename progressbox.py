@@ -29,6 +29,10 @@ class ProgressBox(BoxLayout):
     def mk_bar():
         return ProgressRow()
 
+    def on_touch_down(self, touch):
+        if not self.collide_point(*touch.pos):
+            self.show_bars(hide=True)
+
     def add_bar(self, bar):
         def add(_):
             self.ids.bars_space.add_widget(bar, index=len(self.ids.bars_space.children))

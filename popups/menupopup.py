@@ -52,14 +52,15 @@ class MenuPopup(ModalView):
             button.text = btn
             self.ids.buttons_space.add_widget(button)
 
+    def on_touch_down(self, touch):
+        super().on_touch_down(touch)
+
     def on_dismiss(self):
         self.originator.on_popup_dismiss()
 
     def set_size(self):
-        print('MENU POPUP SET SIZE', self.forced_size)
         if self.forced_size:
             if self.forced_size[0]:
-                print('MENU POPUP WIDTH', self.forced_size[0])
                 self.width = self.forced_size[0]
             if self.forced_size[1]:
                 self.height = self.forced_size[1]
@@ -87,10 +88,7 @@ class MenuPopup(ModalView):
             else:
                 halign = 'x'
         else:
-            print('WIDGET', self.widget.pos)
             x, y = self.widget.to_window(*self.widget.pos)
-            pos_x = self.widget.get_right()
-            width = self.widget.width
             # if a widget is on the left side of window attach menu to its left else to right
             pos_x = self.widget.get_right()
             halign = 'right'

@@ -45,7 +45,6 @@ class FilesSpace(StackLayout):
         self.touch = None
         self.app = App.get_running_app()
 
-
     def get_file_index(self, file):
         return self.children.index(file)
 
@@ -149,7 +148,6 @@ class FilesSpace(StackLayout):
     def on_touch_down(self, touch):
         self.touch = touch
         self.touched_file = self.find_touched_file(touch.pos)
-
         if not self.touched_file:
             self.marked_files.clear()
             self.on_popup_dismiss()

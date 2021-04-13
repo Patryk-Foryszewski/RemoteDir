@@ -13,18 +13,21 @@
         height: 50
 
         BoxLayout:
+            padding: (1, 0, 0, 1)
             pos_hint: {'center_y': .5}
             size_hint_y: None
             height: 26
             spacing: 1
 
-            Image:
+            BulbImage:
                 source: app.img_path('go_back.png')
+                mouse_locked: root.mouse_locked
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.go_back()
-            Image:
+            BulbImage:
                 source: app.img_path('go_forward.png')
+                mouse_locked: root.mouse_locked
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.go_forward()
@@ -34,8 +37,9 @@
                 size_hint_x: 1
                 multiline: False
                 on_text_validate: root.chdir_from_input(self.text)
-            Image:
+            BulbImage:
                 source: app.img_path('arrow_down.png')
+                mouse_locked: root.mouse_locked
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.show_history(current_path)
@@ -46,8 +50,9 @@
                 hint_text: 'Search:'
                 on_text_validate: root.search(self.text)
 
-            Image:
+            BulbImage:
                 id: settings
+                mouse_locked: root.mouse_locked
                 source: app.img_path('settings.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
@@ -55,34 +60,25 @@
 
     BoxLayout:
         size_hint_y: None
-        height: 26
+        height: 28
+        padding: (1 ,0 ,1 ,2)
         BoxLayout
         BoxLayout:
-            #pos_hint: {'right': 1}
             size_hint_x: None
-            width: 230
+            width: 92
             spacing: 1
 
-            # Label:
-            #     text: 'View options:'
-            #     text_size: self.size
-            #     width: 50
-            #     halign: 'right'
-
-            Image:
+            BulbImage:
                 id: view_menu
                 source: app.img_path('arrow_down.png')
+                mouse_locked: root.mouse_locked
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.view_menu()
 
-            # Label:
-            #     text: 'Sort by:'
-            #     text_size: self.size
-            #     width: 50
-            #     halign: 'right'
-            Image:
+            BulbImage:
                 id: sort_menu
+                mouse_locked: root.mouse_locked
                 source: app.img_path('arrow_down.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
@@ -92,22 +88,24 @@
                 size_hint: None, None
                 size: 12, 26
                 spacing: 2
-                Image:
+                BulbImage:
                     id: sort_files_up
                     size: 12, 12
                     source: app.img_path('arrow_up.png')
+                    mouse_locked: root.mouse_locked
                     on_touch_up:
                         if self.collide_point(*args[1].pos) :\
                         root.sort_files(reverse=False)
-                Image:
+                BulbImage:
                     id: sort_files_down
                     size: 12, 12
                     source: app.img_path('arrow_down.png')
+                    mouse_locked: root.mouse_locked
                     on_touch_up:
                         if self.collide_point(*args[1].pos) :\
                         root.sort_files(reverse=True)
 
-            Image:
+            BulbImage:
                 id: file_size
                 source: app.img_path('arrow_down.png')
                 on_touch_up:
@@ -161,6 +159,3 @@
                 Rectangle:
                     pos: self.pos
                     size: self.size
-
-
-

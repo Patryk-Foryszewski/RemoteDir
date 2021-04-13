@@ -1,5 +1,6 @@
 from common_funcs import mk_logger
 from kivy.config import Config
+
 Config.set('graphics', 'multisamples', '0')
 Config.set('graphics', 'width', '1066')
 Config.set('graphics', 'height', '600')
@@ -13,10 +14,11 @@ from remotedir import RemoteDir
 from kivy.factory import Factory
 from adjustabletextinput import AdjustableTextInput
 from threestatecheckbox import ThreeStateCheckbox
+from bulbtextinput import BulbTextInput
+from bulbimage import BulbImage
 from progressbox import ProgressBox
 from filesspace import FilesSpace
 import os
-
 logger = mk_logger(__name__)
 
 
@@ -45,4 +47,6 @@ if __name__ == '__main__':
     Factory.register('FilesSpace', cls=FilesSpace)
     Factory.register('ProgressBox', cls=ProgressBox)
     Factory.register('ThreeStateCheckbox', cls=ThreeStateCheckbox)
+    Factory.register('BulbTextInput', cls=BulbTextInput)
+    Factory.register('BulbImage', cls=BulbImage)
     Main().run()

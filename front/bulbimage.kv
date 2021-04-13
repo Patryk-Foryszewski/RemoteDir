@@ -1,0 +1,12 @@
+<BulbImage>
+    active_color: app.active_bcolor
+    unactive_color: app.unactive_bcolor
+    focused_color: app.main_bcolor
+    background_color: self.unactive_color  if not self.focus else self.focused_color
+    canvas.before:
+        Color:
+            rgba: (0,0,0,0) if self.background_color is None else self.background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+

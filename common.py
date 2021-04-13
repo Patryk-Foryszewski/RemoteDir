@@ -259,7 +259,7 @@ def progress_popup():
     popup = ModalView(
         size_hint=(.5, None),
         height=36,
-        pos_hint={'y': 0, 'x': .5}
+        pos_hint={'y': .02, 'x': .5}
     )
     popup.add_widget(content)
 
@@ -275,18 +275,19 @@ def info_popup(text=''):
     from infolabel import InfoLabel
     from kivy.uix.modalview import ModalView
 
+    content = InfoLabel(text)
     popup = ModalView(
-        size_hint=(.5, None),
-        height=20,
-        pos_hint={'y': 0, 'x': .5},
-        background_color=(0, 0, 0, 0)
+        size_hint=(None, None),
+        background_color=(0, 0, 0, 0),
+        pos_hint={'y': .02, 'right': .98},
+        auto_dismiss=False
     )
-    content = InfoLabel(text, popup)
-    popup.add_widget(content)
+    content.popup = popup
 
     def open_popup(_):
         popup.open()
-
+        popup.size = content.size
+        popup.add_widget(content)
     Clock.schedule_once(open_popup, 0)
     return popup, content
 
