@@ -60,10 +60,14 @@
         BoxLayout:
             #pos_hint: {'right': 1}
             size_hint_x: None
-            width: 100
+            width: 230
             spacing: 1
-            Label:
-                text:
+
+            # Label:
+            #     text: 'View options:'
+            #     text_size: self.size
+            #     width: 50
+            #     halign: 'right'
 
             Image:
                 id: view_menu
@@ -72,7 +76,11 @@
                     if self.collide_point(*args[1].pos) :\
                     root.view_menu()
 
-
+            # Label:
+            #     text: 'Sort by:'
+            #     text_size: self.size
+            #     width: 50
+            #     halign: 'right'
             Image:
                 id: sort_menu
                 source: app.img_path('arrow_down.png')
