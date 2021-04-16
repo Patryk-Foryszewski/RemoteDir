@@ -146,7 +146,7 @@ def get_config():
         return config
 
 
-def settings_popup(title='Settings'):
+def settings_popup(on_popup, on_popup_dismiss, title='Settings'):
     from kivy.uix.popup import Popup
     from popups.settingspopup import SettingsPopup
     from kivy.clock import Clock
@@ -156,29 +156,37 @@ def settings_popup(title='Settings'):
         popup = Popup(title=title,
                       content=content,
                       size_hint=(None, .8),
+                      auto_dismiss=True,
                       width=600)
-
+        popup.bind(on_dismiss=on_popup_dismiss)
         content.originator = popup
         popup.open()
-
+        on_popup()
     Clock.schedule_once(open_popup, .1)
 
 
-def credential_popup(callback=None, title='Credentials', errors=None, auto_dismiss=False):
+def credential_popup(callback=None,
+                     title='Credentials',
+                     errors=None,
+                     auto_dismiss=False,
+                     on_popup=None,
+                     on_popup_dismiss=None):
     from kivy.uix.popup import Popup
     from popups.credentialspopup import CredentialsPopup
     from kivy.clock import Clock
+    content = CredentialsPopup(callback, errors, auto_dismiss=auto_dismiss)
 
     def open_popup(_):
-        content = CredentialsPopup(callback, errors)
+
         popup = Popup(title=title,
                       content=content,
                       size_hint=(None, .8),
                       width=600,
                       auto_dismiss=auto_dismiss)
-
+        popup.bind(on_dismiss=on_popup_dismiss)
         content.popup = popup
         popup.open()
+        on_popup()
 
     Clock.schedule_once(open_popup, .1)
 
@@ -202,7 +210,9 @@ def confirm_popup(callback, text, title='Answer', movable=False, _args=None):
     Clock.schedule_once(open_popup, .1)
 
 
-def menu_popup(originator, buttons, callback,
+def menu_popup(originator,
+               buttons,
+               callback,
                widget=None,
                mouse_pos=None,
                forced_size=None,

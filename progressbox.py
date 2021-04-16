@@ -32,6 +32,7 @@ class ProgressBox(BoxLayout):
     def on_touch_down(self, touch):
         if not self.collide_point(*touch.pos):
             self.show_bars(hide=True)
+        super().on_touch_down(touch)
 
     def add_bar(self, bar):
         def add(_):

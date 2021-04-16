@@ -34,29 +34,25 @@ class CurrentTransferSettings(RelativeLayout):
         self._out_of()
 
     def _out_of(self):
-        print('OUT OF', self.current_index, len(self.transfers_list))
         if self.current_index > len(self.transfers_list):
             self.current_index -= 1
         self.out_of = f'{self.current_index + 1}/{len(self.transfers_list)}'
 
     def set_attrs(self, file):
-        #print('SET ATTRS', file)
         source_attrs = file['source_attrs']
-        #print('     Source ATTRS', source_attrs)
-
-        self.source = {'name': filename(file['src_path']),
+        _filename = filename(file['src_path'])
+        self.source = {'name': _filename,
                        'date': unix_time(source_attrs.st_atime),
                        'size': convert_file_size(source_attrs.st_size),
                        'path': dst_path(file['src_path'])}
 
         target_attrs = file['target_attrs']
-        self.target = {'name': target_attrs.filename,
+        self.target = {'name': _filename,
                        'date': unix_time(target_attrs.st_atime),
                        'size': convert_file_size(target_attrs.st_size),
                        'path': file['dst_path']}
 
     def next_file(self):
-        print('NEXT FILE', self.current_index, len(self.transfers_list))
         if self.current_index < len(self.transfers_list) - 1:
             self.current_index += 1
             file = self.transfers_list[self.current_index][0]
@@ -64,14 +60,12 @@ class CurrentTransferSettings(RelativeLayout):
             self._out_of()
 
     def set_option(self, option):
-        print('SET OPTION', option)
         self.settings_dict['option'] = option
 
     def set_range(self, _range):
         self.settings_dict['range'] = _range
 
     def previous_file(self):
-        print('PREVIOUS FILE', self.current_index)
         if self.current_index > 0:
             self.current_index -= 1
             file = self.transfers_list[self.current_index][0]
@@ -92,7 +86,6 @@ class CurrentTransferSettings(RelativeLayout):
         Clock.schedule_once(pop, .1)
 
     def overwrite(self, transfer):
-        print('OVERWRITE', transfer)
         transfer[0]['overwrite'] = True
         self.manager.put_transfer(data=transfer[0], bar=transfer[1])
         index = self.transfers_list.index(transfer)
@@ -115,7 +108,6 @@ class CurrentTransferSettings(RelativeLayout):
         self.manager.put_transfer(data=transfer[0], bar=transfer[1])
 
     def skip_or_restart(self, option, transfer):
-        print('SKIP OR RESTART')
         if option == 'opt2':
             self.skip(transfer)
         else:
@@ -127,7 +119,6 @@ class CurrentTransferSettings(RelativeLayout):
             self.skip_or_restart(option, transfer)
 
     def ok(self):
-        print('OK', self.settings_dict)
         _range = self.settings_dict['range']
         option = self.settings_dict['option']
 

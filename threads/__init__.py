@@ -219,7 +219,6 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.reconnect()
 
     def next_transfer(self, _=None):
-        print('NEXT TRANSFER', self.transfers_stopped)
         """
         Runs new thread if not too many threads are currently running.
         :param _:

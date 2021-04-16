@@ -14,7 +14,7 @@ import os
 from kivy.app import App
 import re
 from kivy.properties import StringProperty
-from common import mk_logger
+from common import mk_logger, tell_me_about
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -29,6 +29,7 @@ class CredentialsPopup(BoxLayout):
 
     def __init__(self, callback=None, errors=None, auto_dismiss=False):
         super().__init__()
+        Window.bind(on_key_down=self.on_key_down)
         self.bind_external_drop()
         self.callback = callback
         self.show_errors(errors)
@@ -61,6 +62,10 @@ class CredentialsPopup(BoxLayout):
             self.ids.user_err.text = ''
             self.ids.server_err.text = ''
 
+    def on_key_down(self, *args):
+        if args[2] == 40:
+            self.connect()
+
     def fill(self):
         # noinspection PyBroadException
         try:
@@ -76,8 +81,10 @@ class CredentialsPopup(BoxLayout):
             if self.encrypted_password:
                 self.ids.password.text = ''
                 self.ids.password.hint_text = '*' * 10
+                self.ids.main_password_box.opacity = 1
 
     def decrypt_password(self, encrypted):
+        # noinspection PyBroadException
         try:
             decrypted = decrypt(encrypted, self.ids.main_password.text)
         except Exception as ex:
@@ -118,7 +125,7 @@ class CredentialsPopup(BoxLayout):
         else:
             self.ids.user_err.text = ''
 
-        if not self.inputs['password'] and not self.inputs['private_key']:
+        if not self.inputs['password'] and not self.inputs['private_key'] and not self.encrypted_password:
             self.ids.password_err.text = 'Put a password'
             valid = False
         else:
@@ -144,6 +151,7 @@ class CredentialsPopup(BoxLayout):
         if self.dismissed:
             return
         self.path = path.decode(encoding='UTF-8', errors='strict')
+        # noinspection PyBroadException
         try:
             with open(path) as f:
                 text = f.readlines()
@@ -165,6 +173,7 @@ class CredentialsPopup(BoxLayout):
     def connect(self):
         self.unbind_external_drop()
         if self.encrypted_password and not self.password:
+            # noinspection PyBroadException
             try:
                 decrypted_password = decrypt(self.encrypted_password, self.ids.main_password.text)
             except Exception as ex:
@@ -205,7 +214,6 @@ class CredentialsPopup(BoxLayout):
         with open(config_file, 'w+') as f:
             config.write(f)
 
-
     def encrypt(self, text):
         main_password = self.ids.main_password.text
 
@@ -221,7 +229,6 @@ class CredentialsPopup(BoxLayout):
 
         decrypted = f.encrypt(text)
         return decrypted
-
 
     def validate_password(self, password, focus=False):
 
@@ -276,6 +283,16 @@ class CredentialsPopup(BoxLayout):
         self.password = password
 
     def set_main_password(self):
+        if self.encrypted_password:
+
+            # noinspection PyBroadException
+            try:
+                old_key = self.ids.old_main_password_inp.text
+                decrypt(self.encrypted_password, old_key)
+            except Exception as ex:
+                self.ids.old_main_password_err.text = 'Old key is not correct.'
+                return
+
         main_password = self.ids.main_password_inp.text
         if not self.validate_password(main_password):
             self.message = 'Password too weak'
@@ -286,6 +303,7 @@ class CredentialsPopup(BoxLayout):
             self.encrypted_password = encrypt(self.password, main_password).decode()
             config = get_config()
             config.set('CREDENTIALS', 'password', self.encrypted_password)
+            self.ids.manager.current = 'credentials'
             with open(config_file, 'w+') as f:
                 config.write(f)
 

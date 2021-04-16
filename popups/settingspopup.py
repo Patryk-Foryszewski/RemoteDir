@@ -14,7 +14,8 @@ class SettingsPopup(RelativeLayout):
     def fill(self):
         self.ids.download_path.text = download_path()
         self.ids.default_remote.text = default_remote()
-        self.ids.enable_thumbnails.active = thumbnails()
+        self.ids.enable_thumbnails.state = 1 if thumbnails() else 0
+
 
     def save_config(self):
         config = ConfigParser()
@@ -42,7 +43,7 @@ class SettingsPopup(RelativeLayout):
         config.set('SETTINGS', 'enable_thumbnails', enable_thumbnails)
         with open(config_file, 'w') as f:
             config.write(f)
-        self.originator.dismiss()
+        #self.originator.dismiss()
 
     def on_touch_down(self, touch):
         if not self.collide_point(*touch.pos):

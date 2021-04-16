@@ -81,7 +81,6 @@ class FilesSpace(StackLayout):
 
         for file in self.children:
             if file.filename == name:
-                print('REFRESH THUMBNAIL', name)
                 file.set_thumbnail()
                 break
 
@@ -150,9 +149,8 @@ class FilesSpace(StackLayout):
         self.touched_file = self.find_touched_file(touch.pos)
         if not self.touched_file:
             self.marked_files.clear()
-            self.on_popup_dismiss()
-            for file in self.children:
-                file.focus = False
+            self.on_popup_dismiss('1')
+            self.unfocus_all()
             if touch.button == 'right':
                 self.show_menu()
 
@@ -250,7 +248,7 @@ class FilesSpace(StackLayout):
 
         else:
             # move marked files
-            # Calculating my own dx and dy because cant use touch.dx and touch.dy with scrolling.
+            # Calculating my own dx and dy because can't use touch.dx and touch.dy with scrolling.
             # Catching previous touch in self.touch because touch.ppos accualy returns something
             # different than pos of previously recived touch.
             dx = touch.x - self.p_touch[0]
@@ -261,7 +259,12 @@ class FilesSpace(StackLayout):
         return super().on_touch_move(touch)
 
     def show_menu(self):
+        """
+        Opens context menu with options depends to number of marked
 
+
+        :return:
+        """
         if self.touched_file:
             self.find_marked_files()
 
@@ -308,10 +311,10 @@ class FilesSpace(StackLayout):
         elif option == 'File permissions':
             self.originator.chmod(file=self.touched_file)
 
-    def bind_external_drop(self):
+    def bind_external_drop(self, _from=None):
         Window.bind(on_dropfile=self.external_dropfile)
 
-    def unbind_external_drop(self):
+    def unbind_external_drop(self, _from=None):
         Window.unbind(on_dropfile=self.external_dropfile)
 
     def make_dir(self):
@@ -367,7 +370,6 @@ class FilesSpace(StackLayout):
         """
         When file is dropped or pasted from Windows
         """
-
         destination = None
         if window:
             touched = self.find_touched_file(self.to_widget(window._mouse_x, window.height - window._mouse_y))
@@ -384,6 +386,7 @@ class FilesSpace(StackLayout):
             self.originator.rename_file(old, new, mfile)
 
     def unfocus_files(self, files=None):
+
         """
         Unfocus files from self.children in they are not in files list
         """
@@ -392,6 +395,10 @@ class FilesSpace(StackLayout):
                 if file not in files:
                     file.focus = False
         files.clear()
+
+    def unfocus_all(self):
+        for file in self.children:
+            file.focus = False
 
     def mark_area(self, pos):
         with self.canvas:
@@ -460,7 +467,6 @@ class FilesSpace(StackLayout):
             self.copied_files.append(file)
 
     def paste_files(self):
-        print('PASTE FILES', self.copied_files)
         clipboard.OpenClipboard()
         files = ()
         if clipboard.IsClipboardFormatAvailable(clipboard.CF_HDROP):
@@ -514,5 +520,5 @@ class FilesSpace(StackLayout):
             for file in self.marked_files:
                 self.originator.remove(file)
 
-        self.on_popup_dismiss()
+        self.on_popup_dismiss('2')
         popup.dismiss()

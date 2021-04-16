@@ -65,6 +65,7 @@ class RemoteDir(BoxLayout):
             for file in sys.argv[1:]:
                 self.external_dropfile(file.encode(), self.current_path)
 
+
     def absolute_path(self, relative_path):
         """
         Returns full path of path user logs into and given relative path
@@ -177,7 +178,6 @@ class RemoteDir(BoxLayout):
         :return:
         """
 
-        # print('DIRS', self.sftp.listdir_attr())
         self.compare_thumbs()
         #popup, content = info_popup(f'Listing {file_name(self.get_current_path())} directory')
         if not attrs_list:
@@ -206,6 +206,12 @@ class RemoteDir(BoxLayout):
         for attr in attrs:
             attr.path = _path
             attr.thumbnail = self.app.thumbnails
+
+    def unfocus_all(self):
+        """
+        Unfocus all files in file space so they won't open when enter is hit on text input
+        """
+        self.files_space.unfocus_all()
 
     def add_file(self, path=None, attrs=None, _=None, from_search=False):
         """
@@ -236,7 +242,6 @@ class RemoteDir(BoxLayout):
                    widget=self.ids.sort_menu,
                    on_popup=self.on_popup,
                    on_popup_dismiss=self.on_popup_dismiss)
-        self.on_popup()
 
     def sort_files(self, reverse=False):
         """
@@ -288,7 +293,7 @@ class RemoteDir(BoxLayout):
                    widget=self.ids.view_menu,
                    on_popup=self.on_popup,
                    on_popup_dismiss=self.on_popup_dismiss)
-        self.on_popup()
+
 
     def make_dir(self, name):
 
@@ -314,8 +319,7 @@ class RemoteDir(BoxLayout):
                    )
 
     def connect(self, popup=None, password=None):
-
-        self.files_space.unbind_external_drop()
+        self.mouse_locked = True
         if popup:
             popup.dismiss()
 
@@ -327,10 +331,15 @@ class RemoteDir(BoxLayout):
             self.connection.start()
         except ConfigNotFound:
             ex_log('Config not found')
-            credential_popup(callback=self.connect)
+            credential_popup(callback=self.connect,
+                             on_popup=self.on_popup,
+                             on_popup_dismiss=self.on_popup_dismiss)
             return False
         except InvalidConfig as ic:
-            credential_popup(callback=self.connect, errors=ic.errors)
+            credential_popup(callback=self.connect,
+                             errors=ic.errors,
+                             on_popup=self.on_popup,
+                             on_popup_dismiss=self.on_popup_dismiss)
             return False
         except HosKeyNotFound as nf:
             logger.info('Host key not found')
@@ -343,32 +352,43 @@ class RemoteDir(BoxLayout):
             self.connection.hostkeys.hostkey_popup(me.message)
             return False
         except PasswordEncrypted as pe:
-            credential_popup(callback=self.connect, errors={'message': str(pe), 'errors': []})
+            credential_popup(callback=self.connect,
+                             errors={'message': str(pe), 'errors': []},
+                             on_popup=self.on_popup,
+                             on_popup_dismiss=self.on_popup_dismiss)
             return False
 
         except BadAuthenticationType as bat:
             ex_log(f'Authentication exception, {str(bat)}')
-            credential_popup(callback=self.connect, errors={'errors': '',
-                                                            'message': f'{str(bat)}'})
+            credential_popup(callback=self.connect,
+                             errors={'errors': '', 'message': f'{str(bat)}'},
+                             on_popup=self.on_popup,
+                             on_popup_dismiss=self.on_popup_dismiss)
 
         except AuthenticationException as ae:
             ex_log(f'Authentication exception, {str(ae)}')
-            credential_popup(callback=self.connect, errors={'errors': '',
-                                                            'message': f'{str(ae)}'})
+            credential_popup(callback=self.connect,
+                             errors={'errors': '', 'message': f'{str(ae)}'},
+                             on_popup=self.on_popup,
+                             on_popup_dismiss=self.on_popup_dismiss)
 
         except SSHException as she:
             logger.info(f'Connection exception, {she}')
             if 'not a valid' in str(she):
-                credential_popup(callback=self.connect, errors={'errors': ['private_key'],
-                                                                'message': f'{str(she)[0].upper()}{str(she)[1:]}'})
+                credential_popup(callback=self.connect,
+                                 errors={'errors': ['private_key'], 'message': f'{str(she)[0].upper()}{str(she)[1:]}'},
+                                 on_popup=self.on_popup,
+                                 on_popup_dismiss=self.on_popup_dismiss)
             else:
                 content, popup = info_popup(she)
                 content.dismiss_me()
                 self.reconnect()
 
         except FileNotFoundError:
-            credential_popup(callback=self.connect, errors={'errors': ['private_key'],
-                                                            'message': 'Private key file doesn\'t exist'})
+            credential_popup(callback=self.connect,
+                             errors={'errors': ['private_key'], 'message': 'Private key file doesn\'t exist'},
+                             on_popup=self.on_popup,
+                             on_popup_dismiss=self.on_popup_dismiss)
 
         except Exception as ex:
             ex_log(f'Unknown connection exception, {ex}')
@@ -383,7 +403,7 @@ class RemoteDir(BoxLayout):
             self.chdir(self.current_path)
             self.get_base_path()
             self.do_callback()
-            self.files_space.bind_external_drop()
+            self.mouse_locked = False
             return True
 
     def do_callback(self):
@@ -562,7 +582,6 @@ class RemoteDir(BoxLayout):
         Shows Settings Popup with list of options
         """
 
-        self.on_popup()
         menu_popup(widget=self.ids.settings,
                    originator=self,
                    buttons=['Credentials', 'Settings', 'Transfer settings'],
@@ -575,12 +594,14 @@ class RemoteDir(BoxLayout):
         """
         Callback for Settings Popup.
         """
-
-        self.on_popup_dismiss()
         if choice == 'Credentials':
-            credential_popup(auto_dismiss=True)
+            credential_popup(auto_dismiss=True,
+                             on_popup=self.on_popup,
+                             on_popup_dismiss=self.on_popup_dismiss)
+
         elif choice == 'Settings':
-            settings_popup()
+            settings_popup(on_popup=self.on_popup,
+                           on_popup_dismiss=self.on_popup_dismiss)
         elif choice == 'Transfer settings':
             TransferSettings()
 
@@ -588,16 +609,15 @@ class RemoteDir(BoxLayout):
         """
         Lock mouse when popup is shown so moving files, lighting widgets etc stops working
         """
-
+        self.files_space.unbind_external_drop('on_popup')
         self.mouse_locked = True
 
-    def on_popup_dismiss(self, *_):
+    def on_popup_dismiss(self, *args):
         """
         Unlocks mouse when popup is dismissed
         """
-
+        self.files_space.bind_external_drop('on_popup_dismiss')
         self.mouse_locked = False
-
 
     def remove_from_view(self, file):
         """

@@ -1,15 +1,15 @@
 <CheckBox>
     size_hint: None, None
     size: 26, 26
-    #background_checkbox_down: 'img/chbx_checked.png'
-    #background_checkbox_normal: 'img/chbx_unchecked.png'
-    #background_radio_down: 'img/chbx_checked.png'
-    #background_radio_normal: 'img/chbx_unchecked.png'
+    # My own images doesn't work. They are way bigger than set size.
+    # background_checkbox_down: app.img_path('chbx_checked.png')
+    # background_checkbox_normal: app.img_path('chbx_unchecked.png')
+    # background_radio_down: app.img_path('chbx_checked.png')
+    # background_radio_normal: app.img_path('chbx_unchecked.png')
 
     canvas.before:
         Color:
-            rgba: app.active_bcolor if self.state == 'down' else app.unactive_bcolor
+            rgba: app.unactive_bcolor
         Rectangle:
-            #source: 'img/chbx_checked.png' if root.active else  'img/chbx_unchecked.png'
             size: sp(20), sp(20)
             pos: int(self.center_x - sp(10)), int(self.center_y - sp(10))

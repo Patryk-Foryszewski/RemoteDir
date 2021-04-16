@@ -37,6 +37,9 @@
                 size_hint_x: 1
                 multiline: False
                 on_text_validate: root.chdir_from_input(self.text)
+                on_focus:
+                    if self.focus:\
+                    root.unfocus_all()
             BulbImage:
                 source: app.img_path('arrow_down.png')
                 mouse_locked: root.mouse_locked
@@ -49,6 +52,9 @@
                 multiline: False
                 hint_text: 'Search:'
                 on_text_validate: root.search(self.text)
+                on_focus:
+                    if self.focus:\
+                    root.unfocus_all()
 
             BulbImage:
                 id: settings
@@ -70,7 +76,7 @@
 
             BulbImage:
                 id: view_menu
-                source: app.img_path('arrow_down.png')
+                source: app.img_path('file_view.png')
                 mouse_locked: root.mouse_locked
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
@@ -79,7 +85,7 @@
             BulbImage:
                 id: sort_menu
                 mouse_locked: root.mouse_locked
-                source: app.img_path('arrow_down.png')
+                source: app.img_path('sort.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.sort_menu()
@@ -107,7 +113,7 @@
 
             BulbImage:
                 id: file_size
-                source: app.img_path('arrow_down.png')
+                source: app.img_path('size.png')
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.file_size()

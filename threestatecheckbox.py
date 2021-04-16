@@ -1,9 +1,11 @@
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import NumericProperty, ObjectProperty
+from kivy.properties import NumericProperty, ObjectProperty, BooleanProperty
+from common import img_path
 
 
 class ThreeStateCheckbox(BoxLayout):
     image = ObjectProperty('')
+    active = BooleanProperty(False)
     state = NumericProperty(0)
     value = NumericProperty(0)
     callback = ObjectProperty()
@@ -21,18 +23,18 @@ class ThreeStateCheckbox(BoxLayout):
             else:
                 self.state += 1
 
-
     def on_state(self, *_):
         self.set_image()
         self.dispatch('on_state_change')
+        self.active = True if self.state > 0 else False
 
     def set_image(self):
         if self.state == 0:
-            self.image = 'img/chbx_unchecked.png'
+            self.image = img_path('chbx_unchecked.png')
         elif self.state == 1:
-            self.image = 'img/chbx_checked.png'
+            self.image = img_path('chbx_checked.png')
         else:
-            self.image = 'img/chbx_black_box.png'
+            self.image = img_path('chbx_black_box.png')
 
     def on_state_change(self):
         pass

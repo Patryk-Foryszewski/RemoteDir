@@ -25,7 +25,6 @@ class Download(Thread):
         self.waiting_for_directory = None
         self.callback = None
         self.settings = data['settings']
-        print('DOWNLOAD', self.dst_path, self.dirpath)
 
     def run(self):
 
@@ -40,7 +39,6 @@ class Download(Thread):
                               preserve_mtime=self.preserve_mtime)
 
         except FileExistsError as fe:
-            print('FILE EXISTS ERROR', fe)
             fe = str(fe)
             if fe == 'opt1':
                 text = f'File {self.dst_path} already exists'
@@ -94,8 +92,8 @@ class Download(Thread):
 
     def get_attrs(self):
         try:
-            target_attrs = os.lstat(self.src_path)
-            source_attrs = get_dir_attrs(self.dst_path, self.sftp)
+            target_attrs = os.lstat(self.dst_path)
+            source_attrs = get_dir_attrs(self.src_path, self.sftp)
         except Exception as ex:
             ex_log(f'Could not compare file attrs {ex}')
             return None, None

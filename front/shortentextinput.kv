@@ -1,0 +1,8 @@
+<ShortenTextInput>
+    size_hint: None, None
+    size: text_input.size
+    TextInput:
+        id: text_input
+        on_text: root.text = self.text
+        on_focus: root.focus = self.focus
+        on_text_validate: root.text_validate = not root.text_validate

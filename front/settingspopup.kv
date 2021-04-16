@@ -28,6 +28,11 @@
             TextInput:
                 id: download_path
                 size_hint_x: 1
+                on_text_validate: root.save_config()
+                on_focus:
+                    if not self.focus:\
+                    root.save_config()
+
             ErrLabel:
                 id: download_path_err
                 text_size: self.size
@@ -38,6 +43,10 @@
             TextInput:
                 id: default_remote
                 size_hint_x: 1
+                on_text_validate: root.save_config()
+                on_focus:
+                    if not self.focus:\
+                    root.save_config()
 
             ErrLabel:
                 id: default_remote_err
@@ -45,11 +54,12 @@
 
             BoxLayout:
                 size_hint_y: None
-                height: 24
+                height: 36
 
-                CheckBox:
+                ThreeStateCheckbox:
                     id: enable_thumbnails
-                    on_state: app.thumbnails = True if self.state == 'down' else False
+                    on_state: app.thumbnails = True if self.active else False
+                    on_state: root.save_config()
                 Label:
                     text: 'Enable thumbnails:'
                     text_size: self.size

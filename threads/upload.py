@@ -128,6 +128,7 @@ class Upload(Thread):
             ex_log(f'Could not compare file attrs {ex}')
             return None, None
         else:
+
             self.data['source_attrs'] = source_attrs
             self.data['target_attrs'] = target_attrs
             return source_attrs, target_attrs
