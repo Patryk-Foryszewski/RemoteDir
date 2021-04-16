@@ -147,19 +147,20 @@ class IconController(BoxLayout):
 
     def on_touch_up(self, touch):
         # print('TOUCH UP FBX', touch.button)
-        # Because on_touch_up is fired few times on each FileBox. This is issue to be solved
+
         if self.ids.filename.collide_point(*touch.pos) and not self.pressed_key:
 
             if self.focus \
                     and touch.button == 'left'\
                     and not touch.is_double_tap\
                     and not self.space.moving\
-                    and len(self.space.marked_files) == 1\
+                    and len(self.space.selected_files) == 1\
                     and self.counter == 2:
                 self.enable_rename()
         else:
             self.ids.filename.disabled = True
 
+        # Because on_touch_up is fired few times on each FileBox. This is issue to be solved
         if self.previous_touch == touch:
             return
         self.previous_touch = touch
@@ -179,10 +180,14 @@ class IconController(BoxLayout):
         return super().on_touch_up(touch)
 
     def collide_rectangle(self, x, y, right, top):
-        # _x = x if x < right else right
-        # _y = y if y < top else top
-        # _right = right if right > x else x
-        # _top = top if top > y else y
+        """
+        Checks if file is inside selected area with coordinates of - x, y, right, top
+        :param x: int()
+        :param y: int()
+        :param right: int()
+        :param top: int()
+        :return: True if file is inside, False if not.
+        """
         _x = min(x, right)
         _y = min(y, top)
         _right = max(x, right)

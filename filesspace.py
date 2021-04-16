@@ -29,7 +29,7 @@ class FilesSpace(StackLayout):
         self._keyboard.bind(on_key_down=self.key_press)
         self._keyboard.bind(on_key_up=self.key_up)
         Window.bind(on_cursor_leave=partial(self.on_mouse_move, None, (0, 0)))
-        self.marked_files = set()
+        self.selected_files = set()
         self.copied_files = []
         self.pressed_key = ''
         self.sort_by = 'filename'
@@ -37,10 +37,10 @@ class FilesSpace(StackLayout):
         self.moving = False
         self.icon = FileTile
         self.rectangle = None
-        self.mark_rectangle = None
+        self.select_rectangle = None
         self.p_touch = None
         self.touched_file = None
-        self.mark = None
+        self.select = None
         self.attrs_list = None
         self.touch = None
         self.app = App.get_running_app()
@@ -148,7 +148,7 @@ class FilesSpace(StackLayout):
         self.touch = touch
         self.touched_file = self.find_touched_file(touch.pos)
         if not self.touched_file:
-            self.marked_files.clear()
+            self.selected_files.clear()
             self.on_popup_dismiss('1')
             self.unfocus_all()
             if touch.button == 'right':
@@ -162,15 +162,15 @@ class FilesSpace(StackLayout):
                     self.open_file(self.touched_file)
 
             elif 'ctrl' in self.pressed_key:
-                if self.touched_file in self.marked_files:
-                    self.marked_files.remove(self.touched_file)
+                if self.touched_file in self.selected_files:
+                    self.selected_files.remove(self.touched_file)
                     self.touched_file.focus = False
                 else:
                     self.touched_file.focus = True
 
             elif 'shift' in self.pressed_key:
 
-                indexes = [self.get_file_index(file) for file in self.marked_files]
+                indexes = [self.get_file_index(file) for file in self.selected_files]
                 current_index = self.get_file_index(self.touched_file)
                 _min = min(indexes)
                 _max = max(indexes)
@@ -191,11 +191,11 @@ class FilesSpace(StackLayout):
                         file.focus = False
 
             elif not self.pressed_key:
-                if self.touched_file not in self.marked_files:
-                    self.marked_files.clear()
-                    self.marked_files.add(self.touched_file)
+                if self.touched_file not in self.selected_files:
+                    self.selected_files.clear()
+                    self.selected_files.add(self.touched_file)
 
-                if len(self.marked_files) == 1:
+                if len(self.selected_files) == 1:
                     for file in self.children:
                         if file != self.touched_file:
                             file.focus = False
@@ -216,19 +216,19 @@ class FilesSpace(StackLayout):
         elif 'shift' in self.pressed_key:
             pass
 
-        elif self.touched_file and len(self.marked_files) > 1:
-            # manage group of marked files
-            if not self.marking and not self.moving:
-                # unmark files
+        elif self.touched_file and len(self.selected_files) > 1:
+            # manage group of selected files
+            if not self.selecting and not self.moving:
+                # unselect files
                 self.unfocus_files([self.touched_file])
             elif not self.moving:
                 self.unfocus_files([self.touched_file])
 
         try:
-            self.remove_mark_area()
+            self.remove_select_area()
         finally:
-            self.marked_files.clear()
-            self.find_marked_files()
+            self.selected_files.clear()
+            self.find_selected_files()
             self.moving = False
 
             return super().on_touch_up(touch)
@@ -237,17 +237,16 @@ class FilesSpace(StackLayout):
         if self.originator.mouse_locked:
             return super().on_touch_move(touch)
 
-        if not self.marked_files:
-
-            if not self.marking() and not touch.is_mouse_scrolling:
-                # start to draw rectangle if no file is marked
-                self.mark = self.mark_area(touch.pos)
-            elif self.marking():
+        if not self.selected_files:
+            if not self.selecting() and not touch.is_mouse_scrolling:
+                # start to draw rectangle if no file is selected
+                self.select = self.select_area(touch.pos)
+            elif self.selecting():
                 # draw rectangle if already started
-                self.mark(touch.pos)
+                self.select(touch.pos)
 
         else:
-            # move marked files
+            # move selected files
             # Calculating my own dx and dy because can't use touch.dx and touch.dy with scrolling.
             # Catching previous touch in self.touch because touch.ppos accualy returns something
             # different than pos of previously recived touch.
@@ -260,15 +259,14 @@ class FilesSpace(StackLayout):
 
     def show_menu(self):
         """
-        Opens context menu with options depends to number of marked
-
+        Opens context menu with options depends to number of selected files.
 
         :return:
         """
         if self.touched_file:
-            self.find_marked_files()
+            self.find_selected_files()
 
-            if len(self.marked_files) == 1:
+            if len(self.selected_files) == 1:
                 buttons = ['Rename', 'Download', 'Open', 'Delete', 'File permissions']
                 if self.app.thumbnails:
                     buttons.append('Add Thumbnail')
@@ -329,14 +327,14 @@ class FilesSpace(StackLayout):
 
         self.originator.make_dir(name)
 
-    def marking(self):
-        return self.mark is not None
+    def selecting(self):
+        return self.select is not None
 
     def download(self, file):
         self.originator.download(file)
 
     def find_touched_file(self, pos):
-        """Looks for files that was marked on touch down or on touch move"""
+        """Looks for files that was selected on touch down or on touch move"""
 
         for file in self.children:
             if file.collide_point(*pos):
@@ -344,26 +342,26 @@ class FilesSpace(StackLayout):
         else:
             return None
 
-    def focus_marked_files(self):
+    def focus_selected_files(self):
         """Focusing widgets colliding with drawn rectangle"""
         for file in self.children:
-            if file.collide_rectangle(*self.mark_rectangle):
+            if file.collide_rectangle(*self.select_rectangle):
                 file.focus = True
             else:
                 file.focus = False
 
-    def find_marked_files(self):
+    def find_selected_files(self):
         """
-        Lokiing for a focused file and adding to marked_files
+        Looking for a focused file and adding to selected_files
         """
 
         for file in self.children:
             if file.focus:
-                self.marked_files.add(file)
+                self.selected_files.add(file)
 
     def move_files(self, dx, dy):
         self.moving = True
-        for file in self.marked_files:
+        for file in self.selected_files:
             file.set_pos(dx, dy)
 
     def external_dropfile(self, window, localpath):
@@ -380,7 +378,7 @@ class FilesSpace(StackLayout):
 
     def internal_file_drop(self, file):
         """Called from IconController when it detects widget collision"""
-        for mfile in self.marked_files:
+        for mfile in self.selected_files:
             old = mfile.filename
             new = posix_path(file.filename, mfile.filename)
             self.originator.rename_file(old, new, mfile)
@@ -400,30 +398,30 @@ class FilesSpace(StackLayout):
         for file in self.children:
             file.focus = False
 
-    def mark_area(self, pos):
+    def select_area(self, pos):
         with self.canvas:
             Color(0, 0, 0, .2)
             self.rectangle = Rectangle(pos=pos, size=(0, 0))
-            self.mark_rectangle = [pos[0], pos[1], 0, 0]
+            self.select_rectangle = [pos[0], pos[1], 0, 0]
 
-        def mark_files(end):
+        def select_files(end):
             width = end[0] - pos[0]
             heigth = end[1] - pos[1]
-            self.mark_rectangle[2] = end[0]
-            self.mark_rectangle[3] = end[1]
+            self.select_rectangle[2] = end[0]
+            self.select_rectangle[3] = end[1]
             self.rectangle.size = (width, heigth)
-            self.focus_marked_files()
+            self.focus_selected_files()
 
-        return mark_files
+        return select_files
 
-    def mark_all_files(self):
+    def select_all_files(self):
         for file in self.children:
             file.focus = True
-            self.marked_files.add(file)
+            self.selected_files.add(file)
 
-    def remove_mark_area(self):
+    def remove_select_area(self):
         self.rectangle.size = (0, 0)
-        self.mark = None
+        self.select = None
     # end files management
 
     # keyboard management [key_up, key_press]
@@ -439,11 +437,11 @@ class FilesSpace(StackLayout):
             try:
 
                 if self.pressed_key == 'delete':
-                    self.find_marked_files()
-                    if self.marked_files:
+                    self.find_selected_files()
+                    if self.selected_files:
                         self.remove_popup()
                 elif self.pressed_key == 'a' and 'ctrl' in modifiers:
-                    self.mark_all_files()
+                    self.select_all_files()
 
                 elif self.pressed_key == 'c' and 'ctrl' in modifiers:
                     self.copy_files()
@@ -463,7 +461,7 @@ class FilesSpace(StackLayout):
         clipboard.EmptyClipboard()
         clipboard.CloseClipboard()
         self.copied_files.clear()
-        for file in self.marked_files:
+        for file in self.selected_files:
             self.copied_files.append(file)
 
     def paste_files(self):
@@ -500,7 +498,7 @@ class FilesSpace(StackLayout):
 
     def remove_popup(self):
         self.originator.on_popup()
-        text = 'files' if len(self.marked_files) > 1 else 'file'
+        text = 'files' if len(self.selected_files) > 1 else 'file'
         confirm_popup(callback=self.remove,
                       text=f'Are you sure you want to remove this {text} permanently?',
                       movable=True)
@@ -516,8 +514,8 @@ class FilesSpace(StackLayout):
 
     def remove(self, popup, _, answer):
         if answer == 'yes':
-            self.find_marked_files()
-            for file in self.marked_files:
+            self.find_selected_files()
+            for file in self.selected_files:
                 self.originator.remove(file)
 
         self.on_popup_dismiss('2')
