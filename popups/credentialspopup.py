@@ -81,7 +81,7 @@ class CredentialsPopup(BoxLayout):
             if self.encrypted_password:
                 self.ids.password.text = ''
                 self.ids.password.hint_text = '*' * 10
-                self.ids.main_password_box.opacity = 1
+                self.ids.main_password_box.disabled = False
 
     def decrypt_password(self, encrypted):
         # noinspection PyBroadException
@@ -235,7 +235,7 @@ class CredentialsPopup(BoxLayout):
         if focus and len(password) <= 0:
             return
 
-        self.ids.main_password_inp_err.text = 'Password to weak'
+        self.ids.main_password_inp_err.text = 'Password too weak'
         if len(password) < 8:
             return False
         elif not re.search("[a-z]", password):

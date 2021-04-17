@@ -7,7 +7,7 @@ Config.set('graphics', 'height', '600')
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
 from colors import colors
-from common import resource_path, img_path, thumbnails, app_name
+from common import resource_path, img_path, thumbnails, app_name, version
 from kivy.app import App
 from kivy.lang.builder import Builder
 from remotedir import RemoteDir
@@ -27,7 +27,7 @@ class Main(App):
         logger.info('APP STARTED')
         setattr(self, 'img_path', img_path)
         setattr(self, 'thumbnails', thumbnails())
-        self.title = f'RemoteDir of {app_name}'
+        self.title = f'RemoteDir of {app_name}.  {version}'
         self.icon = img_path('dir.png')
 
         for color in colors.items():

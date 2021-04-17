@@ -429,6 +429,7 @@ class FilesSpace(StackLayout):
         self.pressed_key = ''
 
     def key_press(self, *args):
+        print('KEY ARGS', args)
         # args when keyboard key pressed [keyboard, keycode, text, modifiers]
         if len(args) == 4:
             self.pressed_key = args[1][1]
@@ -452,6 +453,9 @@ class FilesSpace(StackLayout):
                 elif self.pressed_key == 'n' and 'ctrl' in modifiers and 'shift' in modifiers:
                     self.make_dir()
 
+                elif args[1][0] == 283 and len(self.selected_files) == 1:  # F2 shortcut
+                    self.touched_file.enable_rename()
+
             except Exception:
                 pass
 
@@ -471,8 +475,6 @@ class FilesSpace(StackLayout):
             files = copy.deepcopy(clipboard.GetClipboardData(clipboard.CF_HDROP))
         if files:
             clipboard.EmptyClipboard()
-            clipboard.CloseClipboard()
-
             for file in files:
                 file = bytes(file, 'utf-8')
                 self.external_dropfile(None, file)
@@ -486,6 +488,7 @@ class FilesSpace(StackLayout):
                     self.copied_files.remove(file)
             else:
                 print('Can not copy files to current path')
+        clipboard.CloseClipboard()
 
     def open_file(self, file):
         self.originator.open_file(file)

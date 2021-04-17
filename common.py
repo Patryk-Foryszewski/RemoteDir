@@ -15,6 +15,7 @@ def app_name():
     return (path.split(sys.argv[0])[1]).split('.')[0]
 
 
+version = '1.0.00'
 app_name = app_name()
 data_path = path.join(environ['LOCALAPPDATA'], 'RemoteDir', app_name)
 cache_path = path.join(data_path, 'Cache')

@@ -69,6 +69,10 @@ class Open(Thread):
         self.open_file()
 
     def open_file(self):
+        """
+        Opens file with default application
+        :return:
+        """
         try:
             self.file = os.system('"{}"'.format(self.dst_path))
         except Exception as ex:
