@@ -10,7 +10,8 @@
     background_color: self.unactive_color if not self.focus else self.focused_color
     valign: 'middle'
     write_tab: False
-    padding_y: [self.height / 2.0 - (self.line_height / 2.0) * len(self._lines), 0]
+    p_top: self.height / 2.0 - (self.line_height / 2.0) * len(self._lines) if not self.multiline else 6
+    padding: [6, self.p_top, 6, 6]
 
 
 

@@ -82,6 +82,10 @@ class CredentialsPopup(BoxLayout):
                 self.ids.password.text = ''
                 self.ids.password.hint_text = '*' * 10
                 self.ids.main_password_box.disabled = False
+                self.ids.old_main_password_box.disabled = False
+            else:
+                self.ids.main_password_box.disabled = True
+                self.ids.old_main_password_box.disabled = True
 
     def decrypt_password(self, encrypted):
         # noinspection PyBroadException
@@ -282,16 +286,21 @@ class CredentialsPopup(BoxLayout):
     def set_password(self, password):
         self.password = password
 
-    def set_main_password(self):
+    def main_password_is_correct(self):
         if self.encrypted_password:
-
             # noinspection PyBroadException
             try:
                 old_key = self.ids.old_main_password_inp.text
                 decrypt(self.encrypted_password, old_key)
             except Exception as ex:
                 self.ids.old_main_password_err.text = 'Old key is not correct.'
-                return
+                return False
+            else:
+                return True
+
+    def set_main_password(self):
+        if not self.main_password_is_correct():
+            return
 
         main_password = self.ids.main_password_inp.text
         if not self.validate_password(main_password):
@@ -308,6 +317,9 @@ class CredentialsPopup(BoxLayout):
                 config.write(f)
 
     def clear_main_password(self):
+        if not self.main_password_is_correct():
+            return
+
         try:
             config = get_config()
             config.set('CREDENTIALS', 'password', '')
@@ -316,6 +328,8 @@ class CredentialsPopup(BoxLayout):
         except Exception as ex:
             ex_log(f'Could not clear main password {ex}')
             self.message = f'Could not clear main password {type(ex)}'
+        else:
+            self.encrypted_password = ''
 
     def dismiss(self):
         self.popup.dismiss()

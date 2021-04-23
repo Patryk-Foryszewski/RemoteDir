@@ -429,7 +429,6 @@ class FilesSpace(StackLayout):
         self.pressed_key = ''
 
     def key_press(self, *args):
-        print('KEY ARGS', args)
         # args when keyboard key pressed [keyboard, keycode, text, modifiers]
         if len(args) == 4:
             self.pressed_key = args[1][1]

@@ -294,7 +294,6 @@ class RemoteDir(BoxLayout):
                    on_popup=self.on_popup,
                    on_popup_dismiss=self.on_popup_dismiss)
 
-
     def make_dir(self, name):
 
         try:

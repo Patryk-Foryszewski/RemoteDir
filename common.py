@@ -9,15 +9,17 @@ from datetime import datetime
 from os import path, environ, makedirs, listdir
 import sys
 
+
 def app_name():
     """Returns app name as dir name"""
     import sys
     return (path.split(sys.argv[0])[1]).split('.')[0]
 
 
-version = '1.0.00'
+version = '1.0.06'
 app_name = app_name()
-data_path = path.join(environ['LOCALAPPDATA'], 'RemoteDir', app_name)
+root_path = path.join(environ['LOCALAPPDATA'], 'RemoteDir')
+data_path = path.join(root_path, app_name)
 cache_path = path.join(data_path, 'Cache')
 config_file = path.join(data_path, 'config.ini')
 log_dir = path.join(data_path, 'Log')
@@ -28,7 +30,10 @@ hidden_files = [thumb_dir]
 forbidden_names = [thumb_dir]
 img_extensions = ('.jpg', 'jpeg', '.png')
 thumbnail_ext = 'jpg'
-
+home_page = 'https://remotedir.eu'
+version_file_url = f'{home_page}/version.json'
+exe_file_url = f'{home_page}/RemoteDir.exe'
+setup_file_url = f'{home_page}/Setup.exe'
 
 def mk_logger(name, level=None, _format=None):
 

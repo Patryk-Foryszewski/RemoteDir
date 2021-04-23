@@ -81,6 +81,7 @@ class IconController(BoxLayout):
         """
         Mehtod that allows to have multiline textinput and validate on enter
         """
+        print('ICON CONTROLLER ON ENTER', self.ids.filename.focus, self.focus)
         if self.ids.filename.focus:
             self.rename_file(self.ids.filename.text.replace('\n', ''))
         elif self.focus:

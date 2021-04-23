@@ -18,12 +18,14 @@ from bulbtextinput import BulbTextInput
 from bulbimage import BulbImage
 from progressbox import ProgressBox
 from filesspace import FilesSpace
+from threads.updater import Updater
 import os
 logger = mk_logger(__name__)
 
 
 class Main(App):
     def build(self):
+        Updater().start()
         logger.info('APP STARTED')
         setattr(self, 'img_path', img_path)
         setattr(self, 'thumbnails', thumbnails())
