@@ -2,6 +2,7 @@ from threading import Thread
 from paramiko.ssh_exception import SSHException
 from common import posix_path, mk_logger, forbidden_names, filename
 from infolabel import InfoLabel
+from kivy.uix.label import Label
 from os import path
 import stat
 
@@ -22,6 +23,7 @@ class RemoveRemoteDirectory(Thread):
         self.on_remove = data['on_remove']
         self.progress_box = data['progress_box']
         self.manager = manager
+        self.done = False
 
     def run(self):
         self.rmdir(self.remote_path)
@@ -64,6 +66,7 @@ class RemoveRemoteDirectory(Thread):
             self.error(ex)
         else:
             self.info(path.split(_path)[1])
+            self.done = True
             if _path == self.remote_path:
                 self.on_remove()
         finally:
@@ -84,5 +87,6 @@ class RemoveRemoteDirectory(Thread):
 
     def info(self, _filename):
         if not self.forbidden(_filename):
-            info = InfoLabel(text=f'Successfully removed {_filename}')
+            info = InfoLabel(text=f'Successfully removed {_filename}', size_hint_x=1, halign='left')
+            info.my_thread = self
             self.progress_box.add_bar(info)

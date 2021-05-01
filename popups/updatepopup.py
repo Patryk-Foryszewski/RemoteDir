@@ -19,7 +19,6 @@ class UpdatePopup(BoxLayout):
         self.load_changelog(changelog)
 
     def load_changelog(self, changelog):
-        print('LOAD CHANGELOG', changelog)
         try:
             self.changelog = json.loads(changelog)
         except Exception as ex:

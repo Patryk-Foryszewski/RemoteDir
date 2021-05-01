@@ -27,7 +27,7 @@ class Download(Thread):
         self.settings = data['settings']
 
     def run(self):
-
+        print('DOWNLOAD', self.src_path)
         logger.info(f'Downloading {self.filename}')
         self.bar.my_thread = self
         self.bar.set_values(f'{"Downloading" if not self.data.get("overwrite") else "Overwriting"} {self.filename}')
@@ -119,7 +119,7 @@ class Download(Thread):
                 raise FileExistsError('opt2')
 
             elif self.settings == 'opt3':
-                os.remove(self.src_path)
+                os.remove(self.dst_path)
                 return True
 
             elif self.settings == 'opt4':
@@ -139,18 +139,6 @@ class Download(Thread):
                     raise FileExistsError('opt5')
         else:
             return True
-
-    def file_exists_behaviour(self):
-        if self.settings == 'Overwrite':
-            self.data['overwrite'] = True
-        elif self.settings == 'Overwrite if size is different':
-            try:
-                remote_attrs = os.stat(self.src_path).st_size
-                local_attrs = get_dir_attrs(self.src_path, self.sftp)
-                if remote_attrs.st_size != local_attrs.st_size:
-                    self.data['overwrite'] = True
-            except Exception as ex:
-                ex_log(f'Could not compare file attrs {ex}')
 
     def overwrite(self):
         logger.info(f'Downloading {self.filename} - Skipped')

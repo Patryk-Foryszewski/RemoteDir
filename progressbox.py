@@ -25,6 +25,8 @@ class ProgressBox(BoxLayout):
         if progress == 1 and self.autoflush:
             self.flush()
 
+
+
     @staticmethod
     def mk_bar():
         return ProgressRow()

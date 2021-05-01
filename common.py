@@ -1,5 +1,4 @@
 import logging
-#import os
 import stat
 import binascii
 import winreg
@@ -7,6 +6,7 @@ import pathlib
 from hurry.filesize import size
 from datetime import datetime
 from os import path, environ, makedirs, listdir
+from os import stat as os_stat
 import sys
 
 
@@ -16,7 +16,7 @@ def app_name():
     return (path.split(sys.argv[0])[1]).split('.')[0]
 
 
-version = '1.0.06'
+version = '1.0.11'
 app_name = app_name()
 root_path = path.join(environ['LOCALAPPDATA'], 'RemoteDir')
 data_path = path.join(root_path, app_name)
@@ -178,9 +178,9 @@ def credential_popup(callback=None,
                      on_popup=None,
                      on_popup_dismiss=None):
     from kivy.uix.popup import Popup
-    from popups.credentialspopup import CredentialsPopup
+    from settings.credentials import Credentials
     from kivy.clock import Clock
-    content = CredentialsPopup(callback, errors, auto_dismiss=auto_dismiss)
+    content = Credentials(errors=errors, auto_dismiss=auto_dismiss)
 
     def open_popup(_):
 
@@ -343,7 +343,7 @@ def unix_time(timestamp):
 
 def is_local_file(_path):
     if path.exists(_path):
-        return stat.S_ISREG(stat(_path).st_mode)
+        return stat.S_ISREG(os_stat(_path).st_mode)
     else:
         return None
 

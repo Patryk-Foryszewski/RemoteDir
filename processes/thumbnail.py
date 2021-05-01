@@ -31,7 +31,6 @@ class ThumbnailGenerator(Thread):
             self.generate_thumbnail()
 
     def generate_thumbnail(self):
-        print('SAVE THUMB AS', self.thumb_path)
         ext = file_ext(self.src_path)
 
         if ext in ('.pdf', '.svg'):

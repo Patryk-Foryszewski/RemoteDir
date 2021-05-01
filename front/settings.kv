@@ -1,0 +1,34 @@
+<Settings>
+    size_hint: None, .8
+    width: 600
+    BoxLayout:
+        orientation: 'vertical'
+        spacing: 2
+        StackLayout:
+            id: options
+            size_hint_y: None
+            spacing: 1
+            padding: (1,1,1,1)
+            height: 43
+
+        BoxLayout:
+            id: search
+            size_hint_y: None
+            height: 26
+            TextInput:
+                id: search
+                on_text: root.search(self.text)
+                size_hint_x: 1
+            BulbImage:
+                source: app.img_path('search.png')
+                canvas.before:
+                    Color:
+                        rgba: (1,0,0,1)
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+
+
+        BoxLayout:
+            id: content
+

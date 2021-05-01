@@ -10,4 +10,6 @@ exe.py
 updater.py
 front/updater.kv
 updater.kv
+dist
+build
 UPDATER

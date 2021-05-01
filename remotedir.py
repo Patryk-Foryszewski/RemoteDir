@@ -16,7 +16,7 @@ import sys
 from paramiko.ssh_exception import SSHException, AuthenticationException, BadAuthenticationType
 import copy
 from functools import partial
-from popups.transfersettings import TransferSettings
+from popups.settings import Settings
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -52,6 +52,7 @@ class RemoteDir(BoxLayout):
         self.reconnection_tries = 0
         self.callback = None
         self.current_history_index = 0
+        setattr(App, 'connect', self.connect)
 
     def on_kv_post(self, base_widget):
         self.childs_to_light = [self.ids.current_path, self.ids.search]
@@ -60,11 +61,10 @@ class RemoteDir(BoxLayout):
         self.base_path = ''
         self.current_path = default_remote()
         self.connect()
-        if self.sftp and len(sys.argv) > 1:
+        if self.sftp and len(sys.argv) > 1 and 'kill' not in sys.argv:
             Window.minimize()
             for file in sys.argv[1:]:
                 self.external_dropfile(file.encode(), self.current_path)
-
 
     def absolute_path(self, relative_path):
         """
@@ -80,13 +80,12 @@ class RemoteDir(BoxLayout):
         :param path:
         :return:
         """
-        return path.lstrip(self.base_path)
+        return path[len(self.base_path)+1:]
 
     def on_current_path(self, *_):
         """
         React to current path changes, formats the path and shows it in the text input.
         """
-
         if self.current_path:
             self.ids.current_path.text = f'/{self.relative_path(self.current_path)}'
         else:
@@ -580,29 +579,7 @@ class RemoteDir(BoxLayout):
         """
         Shows Settings Popup with list of options
         """
-
-        menu_popup(widget=self.ids.settings,
-                   originator=self,
-                   buttons=['Credentials', 'Settings', 'Transfer settings'],
-                   callback=self.choice,
-                   on_popup=self.on_popup,
-                   on_popup_dismiss=self.on_popup_dismiss
-                   )
-
-    def choice(self, choice):
-        """
-        Callback for Settings Popup.
-        """
-        if choice == 'Credentials':
-            credential_popup(auto_dismiss=True,
-                             on_popup=self.on_popup,
-                             on_popup_dismiss=self.on_popup_dismiss)
-
-        elif choice == 'Settings':
-            settings_popup(on_popup=self.on_popup,
-                           on_popup_dismiss=self.on_popup_dismiss)
-        elif choice == 'Transfer settings':
-            TransferSettings()
+        Settings(on_open=self.on_popup, on_dismiss=self.on_popup_dismiss)
 
     def on_popup(self, *_):
         """

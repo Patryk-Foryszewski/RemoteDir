@@ -1,0 +1,56 @@
+<Paths>
+    background_color: app.active_window_color
+    canvas.before:
+        Color:
+            rgba: (1,0,0,1) if self.background_color is None else self.background_color
+        Rectangle:
+            size: self.size
+
+    ScrollView:
+        id: scroller
+        pos_hint: {'center_y': .5, 'center_x': .5}
+        size_hint: None, 1
+        width: 330
+        bar_width: 10
+        bar_color: app.bar_color
+        bar_inactive_color: app.bar_color
+        effect_cls: "ScrollEffect"
+        scroll_type: ['bars', 'content']
+        BoxLayout:
+            id: creds
+            orientation: 'vertical'
+            size_hint: 1 - scroller.bar_width/scroller.width, None
+            height: max(self.minimum_height, scroller.height)
+
+            Label:
+                text: 'Default download path:'
+                text_size: self.size
+            TextInput:
+                id: download_path
+                size_hint_x: 1
+                on_text_validate: root.save_config()
+                on_focus:
+                    if not self.focus:\
+                    root.save_config()
+
+            ErrLabel:
+                id: download_path_err
+                text_size: self.size
+
+            Label:
+                text: 'Default remote path:'
+                text_size: self.size
+            TextInput:
+                id: default_remote
+                size_hint_x: 1
+                on_text_validate: root.save_config()
+                on_focus:
+                    if not self.focus:\
+                    root.save_config()
+
+            ErrLabel:
+                id: default_remote_err
+                text_size: self.size
+
+
+            BoxLayout:

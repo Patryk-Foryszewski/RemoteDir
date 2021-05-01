@@ -18,7 +18,6 @@ class ThumbDownload(Thread):
         self.thumbnails = data['thumbnails']
         self.callback = data['callback']
         self.sftp = sftp
-        print('THUMBDOWNLOAD', self.src_path, self.dst_path, self.thumbnails)
 
     def run(self):
         for thumbnail in self.thumbnails:

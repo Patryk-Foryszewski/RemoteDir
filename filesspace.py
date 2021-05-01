@@ -10,6 +10,7 @@ from filedetails import FileDetails
 import os
 import copy
 from functools import partial
+from threads.updater import Updater
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -77,8 +78,8 @@ class FilesSpace(StackLayout):
     def refresh_thumbnails(self):
         for file in self.children:
             file.set_thumbnail()
-    def refresh_thumbnail(self, name):
 
+    def refresh_thumbnail(self, name):
         for file in self.children:
             if file.filename == name:
                 file.set_thumbnail()
@@ -435,13 +436,15 @@ class FilesSpace(StackLayout):
             modifiers = args[3]
             # noinspection PyBroadException
             try:
-
                 if self.pressed_key == 'delete':
                     self.find_selected_files()
                     if self.selected_files:
                         self.remove_popup()
                 elif self.pressed_key == 'a' and 'ctrl' in modifiers:
                     self.select_all_files()
+
+                elif self.pressed_key == 'u' and 'ctrl' in modifiers:
+                    Updater().start()
 
                 elif self.pressed_key == 'c' and 'ctrl' in modifiers:
                     self.copy_files()

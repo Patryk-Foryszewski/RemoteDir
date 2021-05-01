@@ -19,7 +19,9 @@ from bulbimage import BulbImage
 from progressbox import ProgressBox
 from filesspace import FilesSpace
 from threads.updater import Updater
+import subprocess
 import os
+import sys
 logger = mk_logger(__name__)
 
 
@@ -43,6 +45,12 @@ class Main(App):
             logger.exception(f'Failed to load .kv {ex}')
         else:
             return Builder.load_file(resource_path('front', 'main.kv'))
+
+
+if 'kill' in sys.argv:
+    index = sys.argv.index('kill')
+    to_kill = sys.argv[index+1]
+    os.system(f'{os.environ["HOMEDRIVE"]}\windows\system32\\taskkill.exe /f /im {to_kill}')
 
 
 if __name__ == '__main__':

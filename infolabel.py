@@ -6,8 +6,8 @@ from kivy.properties import StringProperty
 class InfoLabel(Label):
     text = StringProperty('')
 
-    def __init__(self, text, popup=None):
-        super().__init__()
+    def __init__(self, text, popup=None, **kwargs):
+        super().__init__(**kwargs)
         self.popup = popup
         self.text = text
 
