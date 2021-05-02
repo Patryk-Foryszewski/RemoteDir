@@ -18,6 +18,7 @@ from bulbtextinput import BulbTextInput
 from bulbimage import BulbImage
 from progressbox import ProgressBox
 from filesspace import FilesSpace
+from associationrow import AssociationRow
 from threads.updater import Updater
 import subprocess
 import os
@@ -61,4 +62,5 @@ if __name__ == '__main__':
     Factory.register('ThreeStateCheckbox', cls=ThreeStateCheckbox)
     Factory.register('BulbTextInput', cls=BulbTextInput)
     Factory.register('BulbImage', cls=BulbImage)
+    Factory.register('AssociationRow', cls=AssociationRow)
     Main().run()

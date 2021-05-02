@@ -78,3 +78,6 @@ class TransferSettings(BoxLayout):
         except Exception:
             pass
 
+    def on_dismiss(self):
+        pass
+

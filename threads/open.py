@@ -2,7 +2,8 @@ from threading import Thread
 import os
 from threads.download import Download
 from kivy.clock import Clock
-from common import mk_logger, thumbnails, progress_popup, cache_path
+from common import mk_logger, thumbnails, progress_popup, cache_path, get_config, file_ext
+import subprocess
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -61,6 +62,20 @@ class Open(Thread):
         thread.join()
         self.open()
 
+    def get_program(self, path):
+        config = get_config()
+        section = 'ASSOCIATIONS'
+        if config.has_section(section):
+            extension = file_ext(path)
+            if not extension:
+                extension = '.'
+            value = config.get(section, extension)
+            if value:
+                path, params = value.split('#')
+                return path, params
+            else:
+                return '', ''
+
     def open(self):
         self.manager.sftp_queue.put(self.sftp)
         self.manager.thread_queue.put('.')
@@ -73,8 +88,10 @@ class Open(Thread):
         Opens file with default application
         :return:
         """
+        program = self.get_program(self.dst_path)
         try:
-            self.file = os.system('"{}"'.format(self.dst_path))
+            p = subprocess.Popen([program[0], self.dst_path, program[1]])
+            p.wait()
         except Exception as ex:
             ex_log(f'Failed to open file {self.file_name}, {ex}')
 

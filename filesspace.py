@@ -130,8 +130,7 @@ class FilesSpace(StackLayout):
     # mouse behavior [on_touch_down, on_touch_up, on_touch_move]
     def on_mouse_move(self, *args):
         mouse_pos = args[1]
-
-        if not self.originator.mouse_locked:
+        if not self._disabled:
             for child in self.children:
                 
                 if child.focus:
@@ -234,8 +233,12 @@ class FilesSpace(StackLayout):
 
             return super().on_touch_up(touch)
 
+    def _disabled(self):
+        self.disabled = self.originator.disabled
+        return self.disabled
+
     def on_touch_move(self, touch):
-        if self.originator.mouse_locked:
+        if self._disabled():
             return super().on_touch_move(touch)
 
         if not self.selected_files:
@@ -431,6 +434,8 @@ class FilesSpace(StackLayout):
 
     def key_press(self, *args):
         # args when keyboard key pressed [keyboard, keycode, text, modifiers]
+        if self._disabled():
+            return
         if len(args) == 4:
             self.pressed_key = args[1][1]
             modifiers = args[3]

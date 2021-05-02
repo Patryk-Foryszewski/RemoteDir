@@ -1,0 +1,28 @@
+<Associations>
+    RelativeLayout:
+        size_hint_y: 1
+        ScrollView:
+            id: scroller
+            pos_hint: {'top': 1, 'center_x': .5}
+            size_hint_y: .75
+            bar_width: 10
+            bar_color: app.bar_color
+            bar_inactive_color: app.bar_color
+            effect_cls: "ScrollEffect"
+            scroll_type: ['bars', 'content']
+            StackLayout:
+                id: associations_space
+                size_hint_y: None
+                height: max(self.minimum_height, scroller.height)
+
+        AssociationRow:
+            id: association_row
+            pos_hint: {'y': .11, 'center_x': .5}
+
+        Button:
+            pos_hint: {'top': .07, 'right': 1}
+            background_color: app.main_bcolor
+            color: app.font_color
+            text: 'Add'
+            width: 80
+            on_press: root.add_association(association_row)

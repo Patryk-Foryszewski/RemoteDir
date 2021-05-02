@@ -3,30 +3,33 @@ from settings.credentials import Credentials
 from settings.paths import Paths
 from settings.thumbnails import Thumbnails
 from settings.transfersettings import TransferSettings
+from settings.associations import Associations
 from kivy.uix.button import Button
 from functools import partial
 
 
 class Settings(Popup):
+    title = 'Settingscr'
     def __init__(self, on_open, on_dismiss, auto_dismiss=True):
         super().__init__()
-        self.options = [Credentials, Paths, Thumbnails, TransferSettings]
+        self.options = [Credentials, Paths, Thumbnails, TransferSettings, Associations]
         self.settings_dict = {}
         self.open()
         on_open()
         self.bind(on_dismiss=on_dismiss)
         self.auto_dismiss = auto_dismiss
+        self.current_content = None
 
     def fill(self):
         for option in self.options:
             name = option.name
-            self.settings_dict.update({name: {'tags': option.tags, 'class':option}})
+            self.settings_dict.update({name: {'tags': option.tags, 'class': option}})
             self.add_button(name)
 
     def search(self, text):
-        print('SEARCH', text)
         self.clear_buttons()
         if text:
+            text = text.lower()
             for option in self.options:
                 if text in option.tags:
                     self.add_button(option.name)
@@ -43,5 +46,9 @@ class Settings(Popup):
 
     def add_content(self, *args):
         self.ids.content.clear_widgets()
-        op = self.settings_dict[args[0]]['class']()
-        self.ids.content.add_widget(op)
+        self.current_content = self.settings_dict[args[0]]['class']()
+        self.ids.content.add_widget(self.current_content)
+
+    def on_dismiss(self):
+        if self.current_content:
+            self.current_content.on_dismiss()

@@ -50,3 +50,6 @@ class Paths(RelativeLayout):
         if not self.collide_point(*touch.pos):
             self.save_config()
         super().on_touch_down(touch)
+
+    def on_dismiss(self):
+        pass

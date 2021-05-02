@@ -338,8 +338,8 @@ class Credentials(BoxLayout):
         else:
             self.encrypted_password = ''
 
-    def dismiss(self):
-        self.popup.dismiss()
+    def on_dismiss(self):
+        self.dismissed = True
 
     def on_connect(self):
         return

@@ -1,0 +1,22 @@
+<AssociationRow>
+    spacing: 1
+    padding: (1,1,1,1)
+    size_hint_y: None
+    height: 28
+    TextInput:
+        size_hint_x: .2
+        hint_text: 'Extension'
+        text: root.extension
+        on_text: root.extension = self.text
+
+    TextInput:
+        size_hint_x: .5
+        hint_text: 'Path'
+        text: root.path
+        on_text: root.path = self.text
+
+    TextInput:
+        size_hint_x: .3
+        hint_text: 'Params'
+        text: root.params
+        on_text: root.params = self.text
