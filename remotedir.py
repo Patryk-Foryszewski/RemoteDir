@@ -585,17 +585,19 @@ class RemoteDir(BoxLayout):
         """
         Lock mouse when popup is shown so moving files, lighting widgets etc stops working
         """
-        self.disabled = True
-        #self.files_space.unbind_external_drop('on_popup')
-        #self.mouse_locked = True
+        print('DISABLE')
+        #self.disabled = True
+        self.files_space.unbind_external_drop('on_popup')
+        self.mouse_locked = True
 
     def on_popup_dismiss(self, *args):
         """
         Unlocks mouse when popup is dismissed
         """
-        self.disabled = False
-        #self.files_space.bind_external_drop('on_popup_dismiss')
-        #self.mouse_locked = False
+
+        #self.disabled = False
+        self.files_space.bind_external_drop('on_popup_dismiss')
+        self.mouse_locked = False
 
     def remove_from_view(self, file):
         """

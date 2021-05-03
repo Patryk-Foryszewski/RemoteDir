@@ -1,30 +1,21 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
-from kivy.properties import BooleanProperty, ObjectProperty
+from kivy.properties import ObjectProperty
 from kivy.core.window import Window
 import queue
 from progressrow import ProgressRow
 
 
 class ProgressBox(BoxLayout):
-    autoflush = BooleanProperty(True)
     originator = ObjectProperty()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.autoflush = True
         self.queue = queue.Queue()
+        self.manager = None
 
     def set_values(self, desc=''):
         self.ids.desc.text = desc
-
-    def update(self, progress):
-        progress = float(progress)
-        self.ids.progress.width = progress * (self.size[0] - self.ids.percent.size[0])
-        self.ids.percent.text = '{}%'.format(int(progress * 100))
-        if progress == 1 and self.autoflush:
-            self.flush()
-
 
 
     @staticmethod
@@ -53,7 +44,7 @@ class ProgressBox(BoxLayout):
             self.originator.on_popup()
 
     def transfer_start(self):
-        self.ids.short_info.text = 'Transferring files'
+        self.ids.short_info.text = ''
 
     def transfer_stop(self):
         for bar in self.ids.bars_space.children:

@@ -85,14 +85,25 @@ class Credentials(BoxLayout):
             self.ids.port.text = config.get('CREDENTIALS', 'port')
             self.ids.private_key.text = config.get('CREDENTIALS', 'private_key')
             self.encrypted_password = config.get('CREDENTIALS', 'password')
-            if self.encrypted_password:
-                self.ids.password.text = ''
-                self.ids.password.hint_text = '*' * 10
-                self.ids.main_password_box.disabled = False
-                self.ids.old_main_password_box.disabled = False
-            else:
-                self.ids.main_password_box.disabled = True
-                self.ids.old_main_password_box.disabled = True
+            self.set_view()
+
+    def chbl(self):
+        #print('KEYS', self.ids.keys())
+        print('ID 1', self.ids.main_password_box)
+        print('ID 2', self.ids.old_main_password_box)
+        self.ids.main_password_box.disabled = not self.ids.main_password_box.disabled
+        print('CHBL', self.ids.main_password_box.disabled)
+
+    def set_view(self):
+        if self.encrypted_password:
+            self.ids.password.text = ''
+            self.ids.password.hint_text = '*' * 10
+            self.ids.main_password_box.disabled = False
+            self.ids.old_main_password_box.disabled = False
+        else:
+            self.ids.main_password_box.disabled = True
+            self.ids.old_main_password_box.disabled = True
+        print('MPSWD DISABLED?', self.ids.main_password_box.disabled)
 
     def decrypt_password(self, encrypted):
         # noinspection PyBroadException
@@ -304,24 +315,34 @@ class Credentials(BoxLayout):
                 return False
             else:
                 return True
+        else:
+            return True
 
     def set_main_password(self):
+        print('SAVE MAIN PASSWORD 0')
         if not self.main_password_is_correct():
             return
-
+        print('SAVE MAIN PASSWORD 1')
         main_password = self.ids.main_password_inp.text
         if not self.validate_password(main_password):
+            print('SAVE MAIN PASSWORD 2')
             self.message = 'Password too weak'
         elif not self.password:
+            print('SAVE MAIN PASSWORD 3')
             self.message = 'Type password to server first'
         else:
+            print('SAVE MAIN PASSWORD 4')
             self.message = ''
             self.encrypted_password = encrypt(self.password, main_password).decode()
-            config = get_config()
-            config.set('CREDENTIALS', 'password', self.encrypted_password)
+            self.save_config()
             self.ids.manager.current = 'credentials'
-            with open(config_file, 'w+') as f:
-                config.write(f)
+            #config = get_config()
+            #config.set('CREDENTIALS', 'password', self.encrypted_password)
+            #self.ids.manager.current = 'credentials'
+            #print('CURRENT CREDENTIALS')
+            #with open(config_file, 'w+') as f:
+            #    config.write(f)
+
 
     def clear_main_password(self):
         if not self.main_password_is_correct():

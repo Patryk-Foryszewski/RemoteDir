@@ -69,12 +69,16 @@ class Open(Thread):
             extension = file_ext(path)
             if not extension:
                 extension = '.'
+            if not config.has_option(section, extension):
+                return '', ''
             value = config.get(section, extension)
             if value:
                 path, params = value.split('#')
                 return path, params
             else:
                 return '', ''
+        else:
+            return '', ''
 
     def open(self):
         self.manager.sftp_queue.put(self.sftp)
@@ -90,7 +94,17 @@ class Open(Thread):
         """
         program = self.get_program(self.dst_path)
         try:
-            p = subprocess.Popen([program[0], self.dst_path, program[1]])
+            if program[0] and program[1]:
+                command = [f'"{program[0]}"', f'"{program[1]}"', f'"{self.dst_path}"']
+            elif program[0]:
+                command = [f'"{program[0]}"', f'"{self.dst_path}"']
+            elif program[1]:
+                command = [f'"{program[1]}"', f'"{self.dst_path}"']
+            else:
+                command = [f'"{self.dst_path}"']
+
+            logger.info(f'RUNNING COMMAND {command}')
+            p = subprocess.Popen(command, shell=True)
             p.wait()
         except Exception as ex:
             ex_log(f'Failed to open file {self.file_name}, {ex}')
