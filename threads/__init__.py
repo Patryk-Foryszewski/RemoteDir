@@ -298,6 +298,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                         break
             self.progress_box.transfer_stop()
 
+
     def all_threads_finished(self):
         return self.transfers.empty() and self.thread_queue.qsize() == self.max_connections
 

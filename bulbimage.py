@@ -25,8 +25,8 @@ class BulbImage(Image):
         else:
             self.background_color = self.unactive_color
 
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            self.focus = True
-        else:
-            self.focus = False
+    #def on_touch_down(self, touch):
+    #    if self.collide_point(*touch.pos):
+    #        self.focus = True
+    #    else:
+    #        self.focus = False

@@ -47,9 +47,7 @@ class Credentials(BoxLayout):
     def __str__(self):
         return 'Credentials'
 
-
     def show_errors(self, errors_dict):
-        print('SHOW ERRORS', errors_dict)
         if errors_dict:
             errors = errors_dict.get('errors')
             self.message = errors_dict['message']
@@ -87,13 +85,6 @@ class Credentials(BoxLayout):
             self.encrypted_password = config.get('CREDENTIALS', 'password')
             self.set_view()
 
-    def chbl(self):
-        #print('KEYS', self.ids.keys())
-        print('ID 1', self.ids.main_password_box)
-        print('ID 2', self.ids.old_main_password_box)
-        self.ids.main_password_box.disabled = not self.ids.main_password_box.disabled
-        print('CHBL', self.ids.main_password_box.disabled)
-
     def set_view(self):
         if self.encrypted_password:
             self.ids.password.text = ''
@@ -103,7 +94,7 @@ class Credentials(BoxLayout):
         else:
             self.ids.main_password_box.disabled = True
             self.ids.old_main_password_box.disabled = True
-        print('MPSWD DISABLED?', self.ids.main_password_box.disabled)
+
 
     def decrypt_password(self, encrypted):
         # noinspection PyBroadException

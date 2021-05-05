@@ -1,18 +1,14 @@
 from kivy.uix.popup import Popup
-from settings.credentials import Credentials
-from settings.paths import Paths
-from settings.thumbnails import Thumbnails
-from settings.transfersettings import TransferSettings
-from settings.associations import Associations
 from kivy.uix.button import Button
 from functools import partial
+from settings import settings
 
 
 class Settings(Popup):
     title = 'Settingscr'
     def __init__(self, on_open, on_dismiss, auto_dismiss=True):
         super().__init__()
-        self.options = [Credentials, Paths, Thumbnails, TransferSettings, Associations]
+        self.options = settings
         self.settings_dict = {}
         self.open()
         on_open()

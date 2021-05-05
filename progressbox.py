@@ -44,7 +44,7 @@ class ProgressBox(BoxLayout):
             self.originator.on_popup()
 
     def transfer_start(self):
-        self.ids.short_info.text = ''
+        self.ids.short_info.text = 'Transferring files'
 
     def transfer_stop(self):
         for bar in self.ids.bars_space.children:
@@ -52,6 +52,7 @@ class ProgressBox(BoxLayout):
                 break
         else:
             self.ids.short_info.text = 'Files transferred'
+            self.flush()
 
     def show_actions(self):
         self.ids.actions.height = 26
@@ -84,5 +85,8 @@ class ProgressBox(BoxLayout):
         self.manager.stop_transfers()
 
     def flush(self):
-        self.ids.progress.width = 0
-        self.ids.percent.text = ''
+        #self.ids.progress.width = 0
+        #self.ids.percent.text = ''
+        def clear(_):
+            self.ids.short_info.text = ''
+        Clock.schedule_once(clear, 3)

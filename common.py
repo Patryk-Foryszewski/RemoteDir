@@ -16,7 +16,7 @@ def app_name():
     return path.splitext(path.split(sys.argv[0])[1])[0]
 
 
-version = '1.0.16'
+version = '1.0.17'
 app_name = app_name()
 root_path = path.join(environ['LOCALAPPDATA'], 'RemoteDir')
 data_path = path.join(root_path, app_name)
@@ -35,14 +35,18 @@ version_file_url = f'{home_page}/version.json'
 exe_file_url = f'{home_page}/RemoteDir.exe'
 setup_file_url = f'{home_page}/Setup.exe'
 
-def mk_logger(name, level=None, _format=None):
 
+def mk_logger(name, level=logging.DEBUG, _format='[%(levelname)-7s] [%(asctime)s] [%(message)s]'):
+    """
+    Makes logger with given params.
+
+    :param name: (str) Name of class the logger is made for.
+    :param level: (int) Level of logging. Defaults to DEBUG
+    :param _format: (str)
+    :return: logger with two handlers, StreamHanlder and log_file.
+    """
     # Create a custom logger
-    if not level:
-        level = logging.DEBUG
 
-    if not _format:
-        _format = '[%(levelname)-7s] [%(asctime)s] [%(message)s]'
     logger = logging.getLogger(name)
     # prevents log messages from being sent to the root logger
     logger.propagate = 0
@@ -67,9 +71,16 @@ def mk_logger(name, level=None, _format=None):
     return logger
 
 
-def tell_me_about(text, _object):
+def tell_me_about(_object, text=''):
+    """
+    Prints details like variables and methods of given object. Used only for develop.
+
+    :param text: Text will be printed to allow to distinguish between objects details.
+    :param _object: Instance you need to know details
+    """
+
     object_methods = []
-    print("I'M TELLING YOU ABOUT", text)
+    print("HERE IS WHAT I FOUND ABOUT", text)
 
     try:
         print('* Name', _object.__name__)
@@ -96,7 +107,12 @@ def tell_me_about(text, _object):
     print('******')
 
 
-def clipboard_checker(_):
+def clipboard_checker(*_):
+    """
+    Gives information about current clipboard content.
+    :param _: No params needed.
+    """
+
     import win32clipboard as clipboard
     clipboard.OpenClipboard()
     clip_formats = {'CF_TEXT': 1, 'CF_BITMAP': 2, 'CF_METAFILEPICT': 3, 'CF_SYLK': 4, 'CF_DIF': 5, 'CF_TIFF': 6,
@@ -114,6 +130,12 @@ def clipboard_checker(_):
 
 
 def int_validation(to_validate):
+    """
+    Checks if given argument is type(int)
+    :param to_validate: Argument to check
+    :return: List of
+    """
+
     try:
         validated = int(to_validate)
     except Exception as ex:
@@ -152,27 +174,7 @@ def get_config():
         return config
 
 
-def settings_popup(on_popup, on_popup_dismiss, title='Settings'):
-    from kivy.uix.popup import Popup
-    from popups.settingspopup import SettingsPopup
-    from kivy.clock import Clock
-
-    def open_popup(_):
-        content = SettingsPopup()
-        popup = Popup(title=title,
-                      content=content,
-                      size_hint=(None, .8),
-                      auto_dismiss=True,
-                      width=600)
-        popup.bind(on_dismiss=on_popup_dismiss)
-        content.originator = popup
-        popup.open()
-        on_popup()
-    Clock.schedule_once(open_popup, .1)
-
-
-def credential_popup(callback=None,
-                     title='Credentials',
+def credential_popup(title='Credentials',
                      errors=None,
                      auto_dismiss=False,
                      on_popup=None,
@@ -247,15 +249,15 @@ def menu_popup(originator,
     return popup
 
 
-def thumbnail_popup(originator, destination, filename, sftp, on_popup, on_popup_dismiss):
+def thumbnail_popup(originator, destination, _filename, sftp, on_popup, on_popup_dismiss):
     from kivy.uix.popup import Popup
     from popups.thumbnailpopup import ThumbnailPopup
     from kivy.clock import Clock
 
     def open_popup(_):
-        content = ThumbnailPopup(originator, destination, filename, sftp)
+        content = ThumbnailPopup(originator, destination, _filename, sftp)
         popup = Popup(
-            title=f'Drop thumbnail for {filename}',
+            title=f'Drop thumbnail for {_filename}',
             auto_dismiss=True,
             content=content,
             size_hint=(0.7, 0.7))
@@ -308,10 +310,10 @@ def info_popup(text=''):
     return popup, content
 
 
-def get_progid(filename):
+def get_progid(_filename):
     # noinspection PyBroadException
     try:
-        ext = path.splitext(filename)[1]
+        ext = path.splitext(_filename)[1]
         partial_key = r'Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\{}\UserChoice'.format(ext)
         with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER) as reg:
             with winreg.OpenKey(reg, partial_key) as key_object:
@@ -427,15 +429,15 @@ def _log_file():
 log_file = _log_file()
 
 
-def find_thumb(dst_path, filename):
-    path_to_thumbnails = pure_windows_path(cache_path, dst_path.strip('/'), thumb_dir)
+def find_thumb(_dst_path, _filename):
+    path_to_thumbnails = pure_windows_path(cache_path, _dst_path.strip('/'), thumb_dir)
 
     if not path.exists(path_to_thumbnails):
         return None
     _thumbnails = listdir(path_to_thumbnails)
     for thumbnail in _thumbnails:
         _thumbnail = '.'.join(thumbnail.split('.')[0: -1])
-        if _thumbnail == filename:
+        if _thumbnail == _filename:
             return pure_windows_path(path_to_thumbnails, thumbnail)
     else:
         return None

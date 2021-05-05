@@ -2,7 +2,7 @@ from threading import Thread
 import os
 from threads.download import Download
 from kivy.clock import Clock
-from common import mk_logger, thumbnails, progress_popup, cache_path, get_config, file_ext
+from common import mk_logger, thumbnails, progress_popup, cache_path, get_config, file_ext, pure_windows_path
 import subprocess
 
 logger = mk_logger(__name__)
@@ -19,7 +19,7 @@ class Open(Thread):
         self.data = data
         self.src_path = data['src_path']
         self.file_name = os.path.split(self.src_path)[1]
-        self.dst_path = os.path.join(cache_path, self.file_name)
+        self.dst_path = pure_windows_path(cache_path, self.file_name)
         self.data['dst_path'] = os.path.join(cache_path, self.file_name)
         self.manager = manager
         self.sftp = sftp
@@ -95,13 +95,13 @@ class Open(Thread):
         program = self.get_program(self.dst_path)
         try:
             if program[0] and program[1]:
-                command = [f'"{program[0]}"', f'"{program[1]}"', f'"{self.dst_path}"']
+                command = [f'"{program[0]}"', f'"{program[1]}"', self.dst_path]
             elif program[0]:
-                command = [f'"{program[0]}"', f'"{self.dst_path}"']
+                command = [f'"{program[0]}"', self.dst_path]
             elif program[1]:
-                command = [f'"{program[1]}"', f'"{self.dst_path}"']
+                command = [f'"{program[1]}"', self.dst_path]
             else:
-                command = [f'"{self.dst_path}"']
+                command = [self.dst_path]
 
             logger.info(f'RUNNING COMMAND {command}')
             p = subprocess.Popen(command, shell=True)
