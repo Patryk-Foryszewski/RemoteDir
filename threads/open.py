@@ -27,7 +27,7 @@ class Open(Thread):
         self.check_event = None
         self.file = None
         self.bar = None
-        self.upload_progress = None
+
         self.thumbnails = thumbnails()
         self.popup = None
         self.bar_popup = None
@@ -95,11 +95,11 @@ class Open(Thread):
         program = self.get_program(self.dst_path)
         try:
             if program[0] and program[1]:
-                command = [f'"{program[0]}"', f'"{program[1]}"', self.dst_path]
+                command = [program[0], program[1], self.dst_path]
             elif program[0]:
-                command = [f'"{program[0]}"', self.dst_path]
+                command = [program[0], self.dst_path]
             elif program[1]:
-                command = [f'"{program[1]}"', self.dst_path]
+                command = [program[1], self.dst_path]
             else:
                 command = [self.dst_path]
 
@@ -137,16 +137,22 @@ class Open(Thread):
                     'preserve_mtime': True,
                     'settings': 'opt3'}
 
-        self.upload_progress = self.bar.progress
-        self.bar.progress_callback = self.on_upload_progress
-        self.popup, self.bar_popup = progress_popup()
-        self.bar_popup.set_values(f'Uploading {self.file_name} to {os.path.split(self.dst_path)[1]}')
+        if self.bar:
+            self.bar.progress = [0, 1]
+            self.bar.progress_callback = self.on_upload_progress
+            self.popup, self.bar_popup = progress_popup()
+            self.bar_popup.set_values(f'Uploading {self.file_name} to {os.path.split(self.dst_path)[1]}')
+        else:
+            ex_log('BAR is NONE')
+
         self.manager.put_transfer(transfer, bar=self.bar)
         self.manager.run()
 
     def on_upload_progress(self, progress):
         self.bar_popup.update(*progress)
         if progress[0]/progress[1] == 1:
+
             def dismiss_progress_popup(_):
+                self.bar.progress = [0, 1]
                 self.popup.dismiss()
             Clock.schedule_once(dismiss_progress_popup, 1)

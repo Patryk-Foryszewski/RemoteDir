@@ -27,7 +27,6 @@ class Download(Thread):
         self.settings = data['settings']
 
     def run(self):
-        print('DOWNLOAD', self.src_path)
         logger.info(f'Downloading {self.filename}')
         self.bar.my_thread = self
         self.bar.set_values(f'{"Downloading" if not self.data.get("overwrite") else "Overwriting"} {self.filename}')

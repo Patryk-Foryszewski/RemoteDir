@@ -119,7 +119,6 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.start_transfers()
     
     def existing_files_popup(self, data, bar, thread):
-        print('EXISTING FILES POPUP', self.upload_settings_popup, self.download_settings_popup)
         if data['type'] == 'upload':
             if not self.upload_settings_popup:
                 self.upload_settings_popup = CurrentTransferSettings(manager=self)
@@ -146,10 +145,10 @@ class TransferManager(Thread, metaclass=SingletonMeta):
             self.download_settings = config.get('DEFAULTS', 'download')
         except Exception:
             self.download_settings = 'opt1'
-        try:
-            self.timeshift = int(config.get('DEFAULTS', 'timeshift'))
-        except Exception:
-            self.timeshift = 0
+        #try:
+        #    self.timeshift = int(config.get('DEFAULTS', 'timeshift'))
+        #except Exception:
+        #    self.timeshift = 0
 
     def start_transfers(self):
         self.transfers_stopped = False
@@ -197,22 +196,64 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         or creates new sftp connection.
         :return:
         """
-        if not self.sftp_queue.empty():
-            sftp = self.sftp_queue.get()
-            try:
-                sftp._transport.send_ignore()
-            except EOFError:
-                sftp.close()
-                self.get_sftp()
-            else:
-                return sftp
-        else:
 
-            sftp = self.connect()
-            if not sftp:
-                self.reconnect()
-                return None
-            return sftp
+        logger.info('GET SFTP')
+
+        def return_sftp():
+            if not self.sftp_queue.empty():
+                sftp = self.sftp_queue.get()
+                logger.info('GOT SFTP')
+                try:
+                    sftp.execute('ls')
+                except ConnectionResetError as cre:
+                    ex_log(f'SFTP DEAD {cre}')
+                    sftp.close()
+                    return None
+                except Exception as ex:
+                    ex_log(f'SFTP DEAD {ex}')
+                    sftp.close()
+                    return None
+                else:
+                    logger.info('SFTP ALIVE')
+                    return sftp
+            else:
+                logger.info('SFTP QUEUE EMPTY')
+                sftp = self.connect()
+                if not sftp:
+                    logger.info('SFTP NONE')
+                    return None
+                logger.info('SFTP OK')
+                return sftp
+
+
+        while True:
+            sftp = return_sftp()
+            if sftp:
+                return sftp
+
+        #print('GET SFTP')
+        #if not self.sftp_queue.empty():
+        #    sftp = self.sftp_queue.get()
+        #    print('     GOT SFTP', sftp)
+        #    print('     IS ACTIVE', sftp._transport.is_active())
+        #    try:
+        #        sftp._transport.send_ignore()
+        #    except EOFError:
+        #        print('     SFTP DEAD')
+        #        sftp.close()
+        #        self.get_sftp()
+        #    else:
+        #        print('     SFTP ALIVE')
+        #        return sftp
+        #else:
+        #    print('     SFTP QUEUE EMPTY')
+        #    sftp = self.connect()
+        #    if not sftp:
+        #        self.reconnect()
+        #        print('RETURN NONE')
+        #        return None
+        #    print('     RETURN SFTP')
+        #    return sftp
 
     def connection_error(self):
         self.stop_transfers()
@@ -297,7 +338,6 @@ class TransferManager(Thread, metaclass=SingletonMeta):
                         self.progress_box.show_actions()
                         break
             self.progress_box.transfer_stop()
-
 
     def all_threads_finished(self):
         return self.transfers.empty() and self.thread_queue.qsize() == self.max_connections

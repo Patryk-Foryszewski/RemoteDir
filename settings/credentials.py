@@ -95,7 +95,6 @@ class Credentials(BoxLayout):
             self.ids.main_password_box.disabled = True
             self.ids.old_main_password_box.disabled = True
 
-
     def decrypt_password(self, encrypted):
         # noinspection PyBroadException
         try:
@@ -168,7 +167,6 @@ class Credentials(BoxLayout):
         try:
             with open(path) as f:
                 text = f.readlines()
-
         except Exception as ex:
             self.ids.private_key_err.text = 'Failed to read private key file'
         else:
@@ -301,7 +299,7 @@ class Credentials(BoxLayout):
             try:
                 old_key = self.ids.old_main_password_inp.text
                 decrypt(self.encrypted_password, old_key)
-            except Exception as ex:
+            except Exception:
                 self.ids.old_main_password_err.text = 'Old key is not correct.'
                 return False
             else:
@@ -334,11 +332,9 @@ class Credentials(BoxLayout):
             #with open(config_file, 'w+') as f:
             #    config.write(f)
 
-
     def clear_main_password(self):
         if not self.main_password_is_correct():
             return
-
         try:
             config = get_config()
             config.set('CREDENTIALS', 'password', '')
@@ -349,6 +345,7 @@ class Credentials(BoxLayout):
             self.message = f'Could not clear main password {type(ex)}'
         else:
             self.encrypted_password = ''
+            self.set_view()
 
     def on_dismiss(self):
         self.dismissed = True

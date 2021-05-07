@@ -57,8 +57,13 @@
             id: yes
             size_hint: None, None
             #font_size: 30
-            size: 60, 20
+            size: 70, 20
             background_color: app.main_bcolor
+            disabled_color: self.color
+            background_disabled_normal: ''
+            background_disabled_down: ''
+            halign: 'center'
+            text_size: self.size
             text: 'Install'
             color: app.font_color
             on_release: root.dispatch('on_answer','yes')
@@ -67,7 +72,7 @@
             id: no
             size_hint: None, None
             #font_size: 30
-            size: 60, 20
+            size: 70, 20
             background_color: app.main_bcolor
             text: 'Cancel'
             color: app.font_color

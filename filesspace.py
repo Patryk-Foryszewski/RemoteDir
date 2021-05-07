@@ -4,6 +4,7 @@ from kivy.properties import ObjectProperty
 from kivy.core.window import Window
 from kivy.app import App
 from common import confirm_popup, menu_popup, posix_path, is_file, mk_logger, thumbnail_popup, hidden_files
+from common import write_to_config, check_for_updates
 import win32clipboard as clipboard
 from filetile import FileTile
 from filedetails import FileDetails
@@ -42,7 +43,7 @@ class FilesSpace(StackLayout):
         self.p_touch = None
         self.touched_file = None
         self.select = None
-        self.attrs_list = None
+        self.attrs_list = []
         self.touch = None
         self.app = App.get_running_app()
 
@@ -117,11 +118,12 @@ class FilesSpace(StackLayout):
             self.sort_by = 'st_mtime'
         elif sort_by == 'Size':
             self.sort_by = 'st_size'
-
+        write_to_config('VIEW', 'sort_by', self.sort_by)
         self.attrs_list.sort(key=lambda x: (x.__dict__[self.sort_by]), reverse=self.reverse)
         self.fill(self.attrs_list)
 
     def file_size(self, size):
+        write_to_config('VIEW', 'file_size', size)
         for file in self.children:
             file.resize(size)
 
@@ -130,7 +132,7 @@ class FilesSpace(StackLayout):
     # mouse behavior [on_touch_down, on_touch_up, on_touch_move]
     def on_mouse_move(self, *args):
         mouse_pos = args[1]
-        if not self.disabled():
+        if not self.mouse_disabled():
             for child in self.children:
                 
                 if child.focus:
@@ -145,6 +147,7 @@ class FilesSpace(StackLayout):
                     child.background_color = child.unactive_color
 
     def on_touch_down(self, touch):
+        #print('FileSpace')
         self.touch = touch
         self.touched_file = self.find_touched_file(touch.pos)
         if not self.touched_file:
@@ -207,9 +210,9 @@ class FilesSpace(StackLayout):
         return super().on_touch_down(touch)
 
     def on_touch_up(self, touch):
-
         if touch.is_mouse_scrolling:
             return super().on_touch_up(touch)
+
         self.touched_file = self.find_touched_file(touch.pos)
         if 'ctrl' in self.pressed_key:
             pass
@@ -233,12 +236,10 @@ class FilesSpace(StackLayout):
 
             return super().on_touch_up(touch)
 
-    def disabled(self):
-        return self.originator.mouse_locked
+    def mouse_disabled(self):
+        return self.originator.mouse_disabled()
 
     def on_touch_move(self, touch):
-        if self.disabled():
-            return super().on_touch_move(touch)
 
         if not self.selected_files:
             if not self.selecting() and not touch.is_mouse_scrolling:
@@ -305,7 +306,7 @@ class FilesSpace(StackLayout):
             self.unbind_external_drop()
             thumbnail_popup(originator=self,
                             destination=self.originator.get_current_path(),
-                            filename=self.touched_file.filename,
+                            _filename=self.touched_file.filename,
                             sftp=self.originator.sftp,
                             on_popup=self.on_popup,
                             on_popup_dismiss=self.on_popup_dismiss)
@@ -433,7 +434,7 @@ class FilesSpace(StackLayout):
 
     def key_press(self, *args):
         # args when keyboard key pressed [keyboard, keycode, text, modifiers]
-        if self.disabled():
+        if self.mouse_disabled():
             return
         if len(args) == 4:
             self.pressed_key = args[1][1]
@@ -448,7 +449,7 @@ class FilesSpace(StackLayout):
                     self.select_all_files()
 
                 elif self.pressed_key == 'u' and 'ctrl' in modifiers:
-                    Updater().start()
+                    check_for_updates(on_popup=self.on_popup, on_dismiss=self.on_popup_dismiss)
 
                 elif self.pressed_key == 'c' and 'ctrl' in modifiers:
                     self.copy_files()
@@ -492,8 +493,7 @@ class FilesSpace(StackLayout):
                     new = posix_path(path, file.filename)
                     self.rename_file(old, new, file)
                     self.copied_files.remove(file)
-            else:
-                print('Can not copy files to current path')
+
         clipboard.CloseClipboard()
 
     def open_file(self, file):
@@ -519,6 +519,7 @@ class FilesSpace(StackLayout):
             self.icon = FileTile
         elif icon == 'Details':
             self.icon = FileDetails
+        write_to_config('VIEW', 'icon', icon)
         self.sort_files()
 
     def remove(self, popup, _, answer):

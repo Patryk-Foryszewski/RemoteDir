@@ -4,9 +4,10 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.app import App
 from colors import colors
-from common import credential_popup, menu_popup, confirm_popup, posix_path, find_thumb, thumbnails
-from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir, thumbnail_ext
-from common import thumb_dir_path, pure_windows_path, info_popup
+#from common import credential_popup, menu_popup, confirm_popup, posix_path, find_thumb, thumbnails
+#from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir, thumbnail_ext
+#from common import thumb_dir_path, pure_windows_path, info_popup,
+from common import *
 from sftp.connection import Connection
 from exceptions import *
 from threads import TransferManager
@@ -17,6 +18,7 @@ from paramiko.ssh_exception import SSHException, AuthenticationException, BadAut
 import copy
 from functools import partial
 from popups.settings import Settings
+from threads.updater import Updater
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -54,7 +56,6 @@ class RemoteDir(BoxLayout):
         self.current_history_index = 0
         setattr(App, 'connect', self.connect)
 
-
     def on_kv_post(self, base_widget):
         self.childs_to_light = [self.ids.current_path, self.ids.search]
         self.files_space = self.ids.files_space
@@ -66,6 +67,20 @@ class RemoteDir(BoxLayout):
             Window.minimize()
             for file in sys.argv[1:]:
                 self.external_dropfile(file.encode(), self.current_path)
+        self.set_view()
+        check_for_updates(on_popup=self.on_popup, on_dismiss=self.on_popup_dismiss)
+
+    def print_tree(self):
+        [print(type(widget)) for widget in self.walk(restrict=True)]
+        #def save_state(widget, depth=0):
+        #    for child in widget.children:
+        #        if len(widget.children):
+        #            depth+=1
+        #        print(f'{depth * "   "}CHILD', child)
+        #        save_state(child)
+        #
+        #for child in self.children:
+        #    save_state(child, depth=0)
 
     def absolute_path(self, relative_path):
         """
@@ -117,22 +132,29 @@ class RemoteDir(BoxLayout):
                 else:
                     child.background_color = child.unactive_color
 
-    def on_touch_down(self, touch):
-        return super().on_touch_down(touch)
+    def mouse_disabled(self):
+        return self.mouse_locked
 
     def on_touch_up(self, touch):
-        return super().on_touch_up(touch)
+        if not self.mouse_disabled():
+            return super().on_touch_up(touch)
+
+    def on_touch_down(self, touch):
+        #print('RemoteDir', 'propagate' if not self.mouse_disabled() else 'stop')
+        if not self.mouse_disabled():
+            return super().on_touch_down(touch)
 
     def on_touch_move(self, touch):
-        # moves file_space up or down depends to touch_move position
-        self._y = self.ids.space_scroller.vbar[0] * self.files_space.height + touch.y
-        if touch.y / self.ids.space_scroller.height > 0.9 and self.ids.space_scroller.scroll_y < 1:
-            self.ids.space_scroller.scroll_y += 0.1
+        if not self.mouse_disabled():
+            # moves file_space up or down depends to touch_move position
+            self._y = self.ids.space_scroller.vbar[0] * self.files_space.height + touch.y
+            if touch.y / self.ids.space_scroller.height > 0.9 and self.ids.space_scroller.scroll_y < 1:
+                self.ids.space_scroller.scroll_y += 0.1
 
-        elif touch.y / self.ids.space_scroller.height < 0.1 and self.ids.space_scroller.scroll_y > 0:
-            self.ids.space_scroller.scroll_y -= 0.1
+            elif touch.y / self.ids.space_scroller.height < 0.1 and self.ids.space_scroller.scroll_y > 0:
+                self.ids.space_scroller.scroll_y -= 0.1
 
-        return super().on_touch_move(touch)
+            return super().on_touch_move(touch)
 
     def compare_thumbs(self):
         """
@@ -229,6 +251,19 @@ class RemoteDir(BoxLayout):
         elif from_search:
             self.files_space.add_file(attrs)
 
+    def set_view(self):
+        reverse = get_from_config('VIEW', 'reverse')
+        if reverse:
+            self.sort_files(True if reverse == 'True' else False)
+
+        icon = get_from_config('VIEW', 'icon')
+        if icon:
+            self.files_space.view_menu(icon)
+
+        file_size = get_from_config('VIEW', 'file_size')
+        if file_size:
+            self.files_space.file_size(file_size)
+        
     def sort_menu(self):
         """
         Sort files by given option.
@@ -249,9 +284,10 @@ class RemoteDir(BoxLayout):
         :param reverse:
         :return:
         """
-
-        self.files_space.reverse = reverse
-        self.files_space.sort_files()
+        if reverse != self.files_space.reverse:
+            write_to_config('VIEW', 'reverse', str(reverse))
+            self.files_space.reverse = reverse
+            self.files_space.sort_files()
 
     def clear_file_space(self):
         """
@@ -374,7 +410,7 @@ class RemoteDir(BoxLayout):
                                  on_popup_dismiss=self.on_popup_dismiss)
             else:
                 popup, content = info_popup(str(she))
-                content.dismiss_me()
+                content.dismiss_me(str(she))
                 self.reconnect()
 
         except FileNotFoundError:
@@ -538,7 +574,6 @@ class RemoteDir(BoxLayout):
         """
         Goes back to previous history act
         """
-
         if self.current_history_index > 0:
             self.current_history_index -= 1
             self.list_dir_from_history(self.history[self.current_history_index])
@@ -582,6 +617,7 @@ class RemoteDir(BoxLayout):
         """
         Lock mouse when popup is shown so moving files, lighting widgets etc stops working
         """
+        #print('ON POPUP')
         #self.disabled = True
         self.files_space.unbind_external_drop('on_popup')
         self.mouse_locked = True
@@ -591,6 +627,7 @@ class RemoteDir(BoxLayout):
         Unlocks mouse when popup is dismissed
         """
         #self.disabled = False
+        #print('ON POPUP DISMISS')
         self.files_space.bind_external_drop('on_popup_dismiss')
         self.mouse_locked = False
 

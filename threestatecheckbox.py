@@ -22,6 +22,7 @@ class ThreeStateCheckbox(BoxLayout):
                 self.state = 0
             else:
                 self.state += 1
+        return super().on_touch_down(touch)
 
     def on_state(self, *_):
         self.set_image()

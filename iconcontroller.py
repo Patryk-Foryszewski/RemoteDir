@@ -36,6 +36,19 @@ class IconController(BoxLayout):
         self.pressed_key = ''
         self.counter = 0
         self.set_thumbnail()
+        #Window.bind(on_touch_down=self.window_touch_down)
+
+    def window_touch_down(self, *args):
+        """
+        For some reason 'touch' is not propagated to widgets that inherits from
+        Iconcontroller and I can't workout why. Getting 'touch' from Window is
+        a workaround for this issue.
+        :param args:
+        :return:
+        """
+        touch = args[1]
+        pos = self.to_widget(*touch.pos)
+        self.on_touch_down(pos)
 
     @classmethod
     def from_attrs(cls, attrs, space):
@@ -81,14 +94,12 @@ class IconController(BoxLayout):
         """
         Mehtod that allows to have multiline textinput and validate on enter
         """
-        print('ICON CONTROLLER ON ENTER', self.ids.filename.focus, self.focus)
         if self.ids.filename.focus:
             self.rename_file(self.ids.filename.text.replace('\n', ''))
         elif self.focus:
             self.space.open_file(self)
 
     def filename_valid(self, text):
-
         error = ''
         # noinspection PyBroadException
         try:
@@ -114,7 +125,6 @@ class IconController(BoxLayout):
                 return True
 
     def rename_file(self, text):
-        print('RENAME FILE')
         self.ids.filename.disabled = True
         self.ids.filename.focus = False
         self.space.on_popup_dismiss()
@@ -129,17 +139,18 @@ class IconController(BoxLayout):
 
     def enable_rename(self):
         self.space.on_popup()
+
         def delay(_):
             self.ids.filename.disabled = False
             self.ids.filename.focus = True
         Clock.schedule_once(delay, 0.3)
 
     def on_touch_down(self, touch):
-
         if self.collide_point(*touch.pos) and not self.pressed_key:
+            #print('Icon')
             self.counter += 1
             if not self.focus:
-                self.enabled_rename = False
+                #self.enabled_rename = False
                 self.focus = True
         else:
             self.counter = 0
@@ -147,10 +158,7 @@ class IconController(BoxLayout):
         return super().on_touch_down(touch)
 
     def on_touch_up(self, touch):
-        # print('TOUCH UP FBX', touch.button)
-
         if self.ids.filename.collide_point(*touch.pos) and not self.pressed_key:
-
             if self.focus \
                     and touch.button == 'left'\
                     and not touch.is_double_tap\
@@ -169,7 +177,6 @@ class IconController(BoxLayout):
             # print('  FOCUSED FILEBOX', self.filename)
             for file in self.space.children:
                 if file is not self and file.collide_point(*touch.pos):
-                    # print('COLLIDED', file.filename, file.file_type, self.filename, self.file_type)
                     if file.file_type == 'dir':
                         self.space.internal_file_drop(file)
                         break

@@ -135,7 +135,6 @@ class Upload(Thread):
 
     def prepared_to_put(self):
         if self.sftp.exists(self.full_remote_path):
-            print('PREPARE TO PUT', self.settings, self.data.get('overwrite'))
 
             if self.data.get('overwrite'):
                 self.sftp.remove(self.full_remote_path)

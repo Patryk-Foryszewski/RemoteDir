@@ -1,5 +1,4 @@
 from iconcontroller import IconController
-from kivy.clock import Clock
 
 
 class FileTile(IconController):

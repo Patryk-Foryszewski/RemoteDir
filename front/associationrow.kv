@@ -7,16 +7,19 @@
         size_hint_x: .2
         hint_text: 'Extension'
         text: root.extension
+        multiline: False
         on_text: root.extension = self.text
 
     TextInput:
         size_hint_x: .5
         hint_text: 'Path'
         text: root.path
+        multiline: False
         on_text: root.path = self.text
 
     TextInput:
         size_hint_x: .3
         hint_text: 'Params'
         text: root.params
+        multiline: False
         on_text: root.params = self.text

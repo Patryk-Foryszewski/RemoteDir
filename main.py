@@ -28,7 +28,7 @@ logger = mk_logger(__name__)
 
 class Main(App):
     def build(self):
-        Updater().start()
+
         logger.info('APP STARTED')
         setattr(self, 'img_path', img_path)
         setattr(self, 'thumbnails', thumbnails())
@@ -45,7 +45,8 @@ class Main(App):
         except Exception as ex:
             logger.exception(f'Failed to load .kv {ex}')
         else:
-            return Builder.load_file(resource_path('front', 'main.kv'))
+            front = Builder.load_file(resource_path('front', 'main.kv'))
+            return front
 
 
 if 'kill' in sys.argv:

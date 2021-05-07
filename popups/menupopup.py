@@ -4,13 +4,12 @@ from common import button_height
 from kivy.core.window import Window
 from colors import colors
 from kivy.properties import NumericProperty
+from kivy.clock import Clock
 
 
 class MenuPopupBtn(Button):
-
     def __init__(self, menupopup, callback=None, **kwargs):
         super(MenuPopupBtn, self).__init__(**kwargs)
-        self.bind(on_touch_down=self.pressed)
         self.callback = callback
         self.menupopup = menupopup
         self.width = self.menupopup.width
@@ -23,15 +22,18 @@ class MenuPopupBtn(Button):
         else:
             self.background_color = colors['context_menu_normal_btn']
 
-    def pressed(self, *args):
-        if self.callback and args[1].button == 'left' and self.collide_point(*args[1].pos):
+    def on_press(self):
+        #print('Menu Button')
+        if self.callback:
+            #print('MOUSE DISABLED BEFORE CALLBACK', self.menupopup.originator.mouse_disabled())
             self.callback(self.text)
-        self.menupopup.dismiss()
-
+        
+        def dismiss(_):
+            self.menupopup.dismiss()
+        Clock.schedule_once(dismiss, 0.1)
 
 class MenuPopup(ModalView):
     spacing = NumericProperty(1)
-    # MenuPopup & ButtonSpace
 
     def __init__(self, buttons, originator, callback=None, widget=None, mouse_pos=None, forced_size=None, **kwargs):
         super().__init__(**kwargs)
@@ -51,9 +53,6 @@ class MenuPopup(ModalView):
             button = MenuPopupBtn(self, callback=self.callback)
             button.text = btn
             self.ids.buttons_space.add_widget(button)
-
-    def on_touch_down(self, touch):
-        super().on_touch_down(touch)
 
     def on_dismiss(self):
         self.originator.on_popup_dismiss()

@@ -45,7 +45,7 @@
         multiline: False
         write_tab: False
         on_focus:
-            if not self.focus: root.rename_file()
+            if not self.focus: root.rename_file(self.text)
 
     GridLayout:
         cols: 2

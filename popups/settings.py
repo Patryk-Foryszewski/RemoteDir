@@ -5,7 +5,8 @@ from settings import settings
 
 
 class Settings(Popup):
-    title = 'Settingscr'
+    title = 'Settings'
+
     def __init__(self, on_open, on_dismiss, auto_dismiss=True):
         super().__init__()
         self.options = settings

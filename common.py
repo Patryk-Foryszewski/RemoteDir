@@ -16,7 +16,7 @@ def app_name():
     return path.splitext(path.split(sys.argv[0])[1])[0]
 
 
-version = '1.0.17'
+version = '1.0.26'
 app_name = app_name()
 root_path = path.join(environ['LOCALAPPDATA'], 'RemoteDir')
 data_path = path.join(root_path, app_name)
@@ -277,6 +277,7 @@ def progress_popup():
     popup = ModalView(
         size_hint=(.5, None),
         height=36,
+        background_color=(0, 0, 0, 0),
         pos_hint={'y': .02, 'x': .5}
     )
     popup.add_widget(content)
@@ -537,3 +538,25 @@ class TransferSettingsMapper:
                 if value == txt:
                     return key
 
+
+def write_to_config(section, key, value):
+    config = get_config()
+    if not config.has_section(section):
+        config.add_section(section)
+
+    config.set(section, key, value)
+    with open(config_file, 'w+') as f:
+        config.write(f)
+
+
+def get_from_config(section, key):
+    config = get_config()
+    if not config.has_option(section, key):
+        return None
+    else:
+        return config.get(section, key)
+
+
+def check_for_updates(on_popup, on_dismiss):
+    from threads.updater import Updater
+    Updater(on_popup=on_popup, on_dismiss=on_dismiss).start()

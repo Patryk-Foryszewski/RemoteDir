@@ -4,7 +4,7 @@ from kivy.clock import Clock
 
 
 class ProgressRow(BoxLayout):
-    progress=ListProperty()
+    progress = ListProperty([0, 0])
 
     def __init__(self, my_thread=None, **kwargs):
         super().__init__(**kwargs)

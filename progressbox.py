@@ -4,6 +4,7 @@ from kivy.properties import ObjectProperty
 from kivy.core.window import Window
 import queue
 from progressrow import ProgressRow
+from common import img_path
 
 
 class ProgressBox(BoxLayout):
@@ -17,7 +18,6 @@ class ProgressBox(BoxLayout):
     def set_values(self, desc=''):
         self.ids.desc.text = desc
 
-
     @staticmethod
     def mk_bar():
         return ProgressRow()
@@ -25,7 +25,7 @@ class ProgressBox(BoxLayout):
     def on_touch_down(self, touch):
         if not self.collide_point(*touch.pos):
             self.show_bars(hide=True)
-        super().on_touch_down(touch)
+        return super().on_touch_down(touch)
 
     def add_bar(self, bar):
         def add(_):
@@ -36,12 +36,11 @@ class ProgressBox(BoxLayout):
         if hide:
             self.ids.scroll.height = 0
             self.hide_actions()
-            self.ids.show_bars.src_path = 'img/arrow_up.png'
-            self.originator.on_popup_dismiss()
+            self.ids.show_bars.src_path = img_path('arrow_up.png')
+
         else:
             self.ids.scroll.height = .7 * Window.height
-            self.ids.show_bars.src_path = 'img/arrow_down.png'
-            self.originator.on_popup()
+            self.ids.show_bars.src_path = img_path('arrow_down.png')
 
     def transfer_start(self):
         self.ids.short_info.text = 'Transferring files'

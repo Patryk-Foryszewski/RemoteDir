@@ -1,7 +1,6 @@
 from kivy.uix.relativelayout import RelativeLayout
 from common import config_file, default_remote, download_path, local_path_exists
 from configparser import ConfigParser
-from kivy.app import App
 
 
 class Paths(RelativeLayout):
@@ -17,15 +16,13 @@ class Paths(RelativeLayout):
         self.ids.download_path.text = download_path()
         self.ids.default_remote.text = default_remote()
 
-
-
     def save_config(self):
         config = ConfigParser()
-        download_path = self.ids.download_path.text
-        default_remote = self.ids.default_remote.text
+        _download_path = self.ids.download_path.text
+        _default_remote = self.ids.default_remote.text
 
         err = False
-        if not local_path_exists(download_path):
+        if not local_path_exists(_download_path):
             self.ids.download_path_err.text = f"Path doesn't exists"
             err = True
         # if not App.get_running_app().root.remote_path_exists(default_remote):
@@ -40,16 +37,10 @@ class Paths(RelativeLayout):
         except:
             pass
 
-        config.set('SETTINGS', 'download_path', download_path)
-        config.set('SETTINGS', 'default_remote', default_remote)
+        config.set('SETTINGS', 'download_path', _download_path)
+        config.set('SETTINGS', 'default_remote', _default_remote)
         with open(config_file, 'w') as f:
             config.write(f)
-        #self.originator.dismiss()
-
-    def on_touch_down(self, touch):
-        if not self.collide_point(*touch.pos):
-            self.save_config()
-        super().on_touch_down(touch)
 
     def on_dismiss(self):
-        pass
+        self.save_config()
