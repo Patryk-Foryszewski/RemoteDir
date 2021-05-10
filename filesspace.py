@@ -147,7 +147,7 @@ class FilesSpace(StackLayout):
                     child.background_color = child.unactive_color
 
     def on_touch_down(self, touch):
-        #print('FileSpace')
+
         self.touch = touch
         self.touched_file = self.find_touched_file(touch.pos)
         if not self.touched_file:

@@ -32,6 +32,7 @@ class MenuPopupBtn(Button):
             self.menupopup.dismiss()
         Clock.schedule_once(dismiss, 0.1)
 
+
 class MenuPopup(ModalView):
     spacing = NumericProperty(1)
 
@@ -54,8 +55,13 @@ class MenuPopup(ModalView):
             button.text = btn
             self.ids.buttons_space.add_widget(button)
 
-    def on_dismiss(self):
-        self.originator.on_popup_dismiss()
+    def on_touch_down(self, touch):
+        if not self.collide_point(*touch.pos):
+            self.originator.on_popup_dismiss()
+        super().on_touch_down(touch)
+
+    #def on_dismiss(self):
+    #    self.originator.on_popup_dismiss()
 
     def set_size(self):
         if self.forced_size:

@@ -102,8 +102,9 @@ class RemoteDir(BoxLayout):
         """
         React to current path changes, formats the path and shows it in the text input.
         """
+
         if self.current_path:
-            self.ids.current_path.text = f'/{self.relative_path(self.current_path)}'
+            self.ids.current_path.text = f'{self.current_path}'
         else:
             self.ids.current_path.text = ''
 
@@ -140,7 +141,6 @@ class RemoteDir(BoxLayout):
             return super().on_touch_up(touch)
 
     def on_touch_down(self, touch):
-        #print('RemoteDir', 'propagate' if not self.mouse_disabled() else 'stop')
         if not self.mouse_disabled():
             return super().on_touch_down(touch)
 
@@ -457,7 +457,6 @@ class RemoteDir(BoxLayout):
 
     def get_base_path(self):
         """Creates string holding the path user login to."""
-
         if not self.base_path:
             self.base_path = self.get_current_path()
 
@@ -541,7 +540,7 @@ class RemoteDir(BoxLayout):
             if action == 'search':
                 prepared.append(f'{index} Searching for: {act["text"]}')
             elif action == 'listed':
-                path = self.relative_path(act["go_to"])
+                path = act["go_to"]
                 prepared.append(f'{index} {path if path else "Default path"}')
             index_map[index] = _index
             index += 1
@@ -617,8 +616,7 @@ class RemoteDir(BoxLayout):
         """
         Lock mouse when popup is shown so moving files, lighting widgets etc stops working
         """
-        #print('ON POPUP')
-        #self.disabled = True
+
         self.files_space.unbind_external_drop('on_popup')
         self.mouse_locked = True
 
@@ -626,8 +624,7 @@ class RemoteDir(BoxLayout):
         """
         Unlocks mouse when popup is dismissed
         """
-        #self.disabled = False
-        #print('ON POPUP DISMISS')
+
         self.files_space.bind_external_drop('on_popup_dismiss')
         self.mouse_locked = False
 
@@ -687,7 +684,6 @@ class RemoteDir(BoxLayout):
         :return:
         """
 
-        # print('RENAME THUMBNAIL', old_path, old_name, new_path, new_name)
         if self.app.thumbnails:
             from common import find_thumb
             old_local_thumbnail = find_thumb(old_path, old_name)
@@ -737,7 +733,6 @@ class RemoteDir(BoxLayout):
             else:
                 logger.info(f'File renamed from {file.filename} to {os.path.split(new_name)[1]}')
                 self.files_space.remove_file(file)
-                # print('     CHECK IF CURRENT PATH', new_path, '|||', self.current_path, new_path == self.current_path )
                 if self.is_current_path(new_path):
                     attrs = self.get_file_attrs(full_new_path)
                     if attrs:
@@ -850,7 +845,9 @@ class RemoteDir(BoxLayout):
         """
 
         current = self.sftp.getcwd()
-        return current if current else posix_path()
+        current = current if current else self.base_path
+        self.current_path = current
+        return current
 
     def open_file(self, file):
         """

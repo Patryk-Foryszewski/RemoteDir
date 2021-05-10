@@ -40,6 +40,10 @@
                 on_focus:
                     if self.focus:\
                     root.unfocus_all()
+                    root.mouse_locked = True
+                on_focus:
+                    if not self.focus:\
+                    root.mouse_locked = False
             BulbImage:
                 source: app.img_path('arrow_down.png')
                 mouse_locked: root.mouse_locked
@@ -55,6 +59,10 @@
                 on_focus:
                     if self.focus:\
                     root.unfocus_all()
+                    root.mouse_locked = True
+                on_focus:
+                    if not self.focus:\
+                    root.mouse_locked = False
 
             BulbImage:
                 id: settings

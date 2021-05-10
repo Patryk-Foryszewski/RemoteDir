@@ -19,8 +19,6 @@ from bulbimage import BulbImage
 from progressbox import ProgressBox
 from filesspace import FilesSpace
 from associationrow import AssociationRow
-from threads.updater import Updater
-import subprocess
 import os
 import sys
 logger = mk_logger(__name__)

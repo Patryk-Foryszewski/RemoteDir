@@ -290,47 +290,38 @@ class Credentials(BoxLayout):
 
         return requirements
 
-    def set_password(self, password):
-        self.password = password
+    #def set_password(self, password):
+    #    self.password = password
 
     def main_password_is_correct(self):
         if self.encrypted_password:
             # noinspection PyBroadException
             try:
                 old_key = self.ids.old_main_password_inp.text
-                decrypt(self.encrypted_password, old_key)
+                decrypted = decrypt(self.encrypted_password, old_key)
             except Exception:
                 self.ids.old_main_password_err.text = 'Old key is not correct.'
                 return False
             else:
+                self.password = decrypted
                 return True
         else:
             return True
 
     def set_main_password(self):
-        print('SAVE MAIN PASSWORD 0')
         if not self.main_password_is_correct():
             return
-        print('SAVE MAIN PASSWORD 1')
+
         main_password = self.ids.main_password_inp.text
         if not self.validate_password(main_password):
-            print('SAVE MAIN PASSWORD 2')
             self.message = 'Password too weak'
         elif not self.password:
-            print('SAVE MAIN PASSWORD 3')
             self.message = 'Type password to server first'
         else:
-            print('SAVE MAIN PASSWORD 4')
             self.message = ''
             self.encrypted_password = encrypt(self.password, main_password).decode()
             self.save_config()
             self.ids.manager.current = 'credentials'
-            #config = get_config()
-            #config.set('CREDENTIALS', 'password', self.encrypted_password)
-            #self.ids.manager.current = 'credentials'
-            #print('CURRENT CREDENTIALS')
-            #with open(config_file, 'w+') as f:
-            #    config.write(f)
 
     def clear_main_password(self):
         if not self.main_password_is_correct():
