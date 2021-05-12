@@ -2,7 +2,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.core.window import Window
 from processes.thumbnail import ThumbnailGenerator
-from common import mk_logger, posix_path, pure_windows_path, thumb_dir, cache_path, dst_path
+from common import mk_logger, pure_posix_path, pure_windows_path, thumb_dir, cache_path, dst_path
 from shutil import copyfile
 from os import path, remove, makedirs
 
@@ -55,7 +55,7 @@ class ThumbnailPopup(BoxLayout):
                     remove(cache_pic)
 
                 copyfile(th.thumb_path, cache_pic)
-                self.sftp.put(cache_pic, posix_path(self.destination, thumb_dir, self.pic_name), preserve_mtime=True)
+                self.sftp.put(cache_pic, pure_posix_path(self.destination, thumb_dir, self.pic_name), preserve_mtime=True)
             except Exception as ex:
                 self.popup.title = f'Failed to upload thumbnail for {self.filename} {type(ex)}'
                 ex_log(f'Failed to upload thumbnail for {self.filename} {ex}')

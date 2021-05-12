@@ -2,7 +2,7 @@ from kivy.properties import StringProperty, BooleanProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.core.window import Window
 from pathvalidate import ValidationError, validate_filename
-from common import get_progid, convert_file_size, unix_time, forbidden_names, find_thumb, posix_path, img_path
+from common import get_progid, convert_file_size, unix_time, forbidden_names, find_thumb, pure_posix_path, img_path
 from kivy.clock import Clock
 
 
@@ -131,8 +131,8 @@ class IconController(BoxLayout):
         if not self.filename_valid(text):
             return
         if text != self.filename:
-            full_old_path = posix_path(self.path, self.filename)
-            full_new_path = posix_path(self.path, text)
+            full_old_path = pure_posix_path(self.path, self.filename)
+            full_new_path = pure_posix_path(self.path, text)
             self.space.rename_file(full_old_path, full_new_path, file=self)
             self.ids.filename.disabled = True
             self.focus = False

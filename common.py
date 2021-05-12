@@ -16,7 +16,7 @@ def app_name():
     return path.splitext(path.split(sys.argv[0])[1])[0]
 
 
-version = '1.0.29'
+version = '1.0.33'
 app_name = app_name()
 root_path = path.join(environ['LOCALAPPDATA'], 'RemoteDir')
 data_path = path.join(root_path, app_name)
@@ -36,7 +36,7 @@ exe_file_url = f'{home_page}/RemoteDir.exe'
 setup_file_url = f'{home_page}/Setup.exe'
 
 
-def mk_logger(name, level=logging.DEBUG, _format='[%(levelname)-7s] [%(asctime)s] [%(message)s]'):
+def mk_logger(name, level=logging.DEBUG, _format='[%(levelname)-7s] [%(asctime)s] [%(funcName)s] [%(message)s]'):
     """
     Makes logger with given params.
 
@@ -135,13 +135,13 @@ def int_validation(to_validate):
     :param to_validate: Argument to check
     :return: List of
     """
-
     try:
-        validated = int(to_validate)
+        if type(to_validate) != int:
+            raise ValueError(f'Wrong value type {type(to_validate)}')
     except Exception as ex:
         return [False, ex]
     else:
-        return [True, validated]
+        return [True, to_validate]
 
 
 def fingerprint(key):
@@ -295,19 +295,35 @@ def info_popup(text=''):
     from kivy.uix.modalview import ModalView
 
     content = InfoLabel(text)
-    popup = ModalView(
+
+    class InfoLabelWrapper(ModalView):
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+        def on_touch_down(self, touch):
+            super().on_touch_down(touch)
+
+        def on_touch_up(self, touch):
+            super().on_touch_up(touch)
+        
+        def on_touch_move(self, touch):
+            super().on_touch_move(touch)
+
+    popup = InfoLabelWrapper(
         size_hint=(None, None),
         background_color=(0, 0, 0, 0),
-        pos_hint={'y': .02, 'right': .98},
+        pos_hint={'y': .06, 'right': .98},
         auto_dismiss=False
     )
+
     content.popup = popup
 
     def open_popup(_):
         popup.open()
         popup.size = content.size
         popup.add_widget(content)
-    Clock.schedule_once(open_popup, 0)
+    Clock.schedule_once(open_popup, -1)
     return popup, content
 
 
@@ -329,7 +345,7 @@ def convert_file_size(_size):
     return size(_size)
 
 
-def posix_path(*args):
+def pure_posix_path(*args):
     return rf'{(pathlib.PurePosixPath(*args))}'
 
 

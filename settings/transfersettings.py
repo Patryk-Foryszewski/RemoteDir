@@ -79,5 +79,4 @@ class TransferSettings(BoxLayout):
             pass
 
     def on_dismiss(self):
-        pass
-
+        return True

@@ -28,6 +28,7 @@ class Credentials(BoxLayout):
     message = StringProperty('')
     tags = ['password', 'main', 'path', 'ssh', 'key']
     name = 'Credentials'
+    originator = None
 
     def __init__(self, callback=None, errors=None, auto_dismiss=False):
         super().__init__()
@@ -123,21 +124,25 @@ class Credentials(BoxLayout):
 
     def validate(self):
         self.inputs = self.get_inputs()
-
+        print('VALIDATE', self.inputs)
+        print('1')
         valid = True
         if not self.inputs['server']:
             self.ids.server_err.text = 'Server name can not be empty'
+            print('2')
             valid = False
         else:
             self.ids.server_err.text = ''
 
         if not self.inputs['user']:
             self.ids.user_err.text = 'User name can not be empty'
+            print('3')
             valid = False
         else:
             self.ids.user_err.text = ''
 
         if not self.inputs['password'] and not self.inputs['private_key'] and not self.encrypted_password:
+            print('4')
             self.ids.password_err.text = 'Put a password'
             valid = False
         else:
@@ -145,10 +150,11 @@ class Credentials(BoxLayout):
 
         port = int_validation(self.inputs['port'])
         if not port[0]:
+            print('5')
             self.ids.port_err.text = 'Wrong port nr'
         else:
             self.ids.port_err.text = ''
-
+        print('VALID', valid)
         if valid:
             # Possibility of coping pkey file to program directory. Rethink if that can be useful.
             # if self.ids.copy_pkey.state == 'down':
@@ -199,13 +205,19 @@ class Credentials(BoxLayout):
 
         if not self.validate():
             return
-        self.save_config()
-        self.dismissed = True
+        
+        if self.originator:
+            self.originator.dismiss()
+        else:
+            self.on_dismiss()
         App.get_running_app().root.connect(self.popup, self.password)
 
     def save_config(self):
-        if not self.validate():
-            return
+
+        #if not self.validate():
+        #    print('NOT VALID')
+        #    return False
+
         if not os.path.exists(data_path):
             os.makedirs(data_path)
 
@@ -224,6 +236,7 @@ class Credentials(BoxLayout):
         config.set('CREDENTIALS', 'password', self.encrypted_password)
         with open(config_file, 'w+') as f:
             config.write(f)
+        return True
 
     def encrypt(self, text):
         main_password = self.ids.main_password.text
@@ -339,7 +352,13 @@ class Credentials(BoxLayout):
             self.set_view()
 
     def on_dismiss(self):
-        self.dismissed = True
+        self.inputs = self.get_inputs()
+        saved = self.save_config()
+        if saved:
+            self.dismissed = True
+            return True
+        else:
+            return False
 
     def on_connect(self):
         return

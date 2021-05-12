@@ -44,8 +44,16 @@ class Settings(Popup):
     def add_content(self, *args):
         self.ids.content.clear_widgets()
         self.current_content = self.settings_dict[args[0]]['class']()
+        self.current_content.originator = self
         self.ids.content.add_widget(self.current_content)
 
-    def on_dismiss(self):
-        if self.current_content:
-            self.current_content.on_dismiss()
+    def on_touch_down(self, touch):
+        print('SETTINGS ON TOUCH ')
+        if not self.collide_point(*touch.pos):
+            if self.current_content:
+                dismissed = self.current_content.on_dismiss()
+                if dismissed:
+                    self.dismiss()
+                else:
+                    self.title = 'Fill the form correctly'
+        return super().on_touch_down(touch)

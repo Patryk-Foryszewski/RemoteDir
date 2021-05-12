@@ -1,5 +1,5 @@
 from threading import Thread
-from common import posix_path, confirm_popup,  mk_logger,  get_dir_attrs
+from common import pure_posix_path, confirm_popup,  mk_logger,  get_dir_attrs
 from threads.upload import Upload
 
 
@@ -48,7 +48,7 @@ class MkRemoteDirs(Thread):
 
     def makedirs(self):
         for _dir in self.data['name']:
-            full_path = posix_path(self.dst_path, _dir)
+            full_path = pure_posix_path(self.dst_path, _dir)
             try:
                 self.sftp.makedirs(full_path)
                 attrs = get_dir_attrs(full_path, self.sftp)

@@ -9,7 +9,7 @@ colors = {
         'context_menu': get_color_from_hex('#d0e3f6'),
         'context_menu_normal_btn': get_color_from_hex('#8fbae7'),
         'context_menu_active_btn': get_color_from_hex('#d0e3f6'),
-        'info_label_background': get_color_from_hex('#d0e3f6'),
+        'info_label_background': get_color_from_hex('#FCAE1E'), #('#d0e3f6'),
         'cursor_color': get_color_from_hex('#282828'),
         'bar_color': get_color_from_hex('#c0c0c4'),
         'progress_color': get_color_from_hex('#60bd4d'),

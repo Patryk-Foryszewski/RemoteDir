@@ -1,6 +1,6 @@
 from threading import Thread
 from paramiko.ssh_exception import SSHException
-from common import posix_path, mk_logger, forbidden_names, filename
+from common import pure_posix_path, mk_logger, forbidden_names, filename
 from infolabel import InfoLabel
 from kivy.uix.label import Label
 from os import path
@@ -32,11 +32,11 @@ class RemoveRemoteDirectory(Thread):
 
         try:
             for f in self.sftp.listdir_attr(_path):
-                rpath = posix_path(_path, f.filename)
+                rpath = pure_posix_path(_path, f.filename)
                 if stat.S_ISDIR(f.st_mode):
                     self.rmdir(rpath)
                 else:
-                    rpath = posix_path(_path, f.filename)
+                    rpath = pure_posix_path(_path, f.filename)
                     self.sftp.remove(rpath)
                     # avoid to inform about files from directories like .thumbnails
                     for name in forbidden_names:

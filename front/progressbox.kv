@@ -63,10 +63,6 @@
                 if self.collide_point(*args[1].pos) :\
                 root.skip_all()
 
-
-
-
-
     BoxLayout:
         id: short_info
         text: ''
@@ -82,14 +78,15 @@
         BoxLayout:
 
         Label:
-            text: 'Stop transfers'
+            id: stop
+            disabled: True
+            text: 'Stop transfers' if not self.disabled else ''
             size_hint_x: None
             width: 100
             text_size: self.size
             on_touch_down:
                 if self.collide_point(*args[1].pos) :\
                 root.stop()
-
 
         Image:
             id: show_bars

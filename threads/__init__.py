@@ -16,12 +16,11 @@ from threads.removeremote import RemoveRemoteDirectory
 from threads.thumbdownload import ThumbDownload
 from threads.remotesftpsearch import RemoteSftpSearch
 from popups.currenttransfersettings import CurrentTransferSettings
-
 from weakref import WeakValueDictionary
 import os
 import stat
 import queue
-from common import posix_path, pure_windows_path, mk_logger, get_config, confirm_popup
+from common import pure_posix_path, pure_windows_path, mk_logger, get_config
 from kivy.clock import Clock
 from functools import partial
 from datetime import datetime
@@ -83,12 +82,10 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         self.upload_settings_popup = None
         self.download_settings_popup = None
         self.transfers_stopped = False
-        #for _ in range(self.max_connections):
-        #    self.thread_queue.put('.')
 
     def run(self):
-
         self.get_transfer_settings()
+
         while not self.tasks_queue.empty():
             task = self.tasks_queue.get()
             if task['type'] == 'upload':
@@ -137,37 +134,31 @@ class TransferManager(Thread, metaclass=SingletonMeta):
 
     def get_transfer_settings(self):
         config = get_config()
+        # noinspection PyBroadException
         try:
             self.upload_settings = config.get('DEFAULTS', 'upload')
         except Exception:
             self.upload_settings = 'opt1'
+
+        # noinspection PyBroadException
         try:
             self.download_settings = config.get('DEFAULTS', 'download')
         except Exception:
             self.download_settings = 'opt1'
-        #try:
-        #    self.timeshift = int(config.get('DEFAULTS', 'timeshift'))
-        #except Exception:
-        #    self.timeshift = 0
 
     def start_transfers(self):
         self.transfers_stopped = False
+        self.progress_box.transfer_start()
         for _ in range(self.max_connections):
             self.thread_queue.put('.')
             self.next_transfer()
-        #if not self.transfers_event:
-        #    self.transfers_event = Clock.schedule_interval(self.next_transfer, self.delay)
 
-    def stop_transfers(self, cause=None):
-        cause = cause if cause else ''
+    def stop_transfers(self, cause=''):
         logger.info(f'Thread manager stop. {cause}')
         self.transfers_stopped = True
+        self.progress_box.transfer_stop()
         while not self.thread_queue.empty():
             self.thread_queue.get()
-
-        #if self.transfers_event:
-        #    self.transfers_event.cancel()
-        #    self.transfers_event = None
 
     def reconnect(self, _=None):
         sftp = self.connect()
@@ -183,7 +174,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
             sftp = conn.connect()
         except Exception as ex:
             ex_log(f'Connection exception {ex}')
-            self.stop_transfers(ex)
+            self.stop_transfers(str(ex))
             self.reconnect()
             return None
         else:
@@ -192,8 +183,8 @@ class TransferManager(Thread, metaclass=SingletonMeta):
     def get_sftp(self):
         """
         Gets sftp from queue if not empty and checks if the sftp is alive.
-        If no it recursively call get sftp to check next sftp from queue
-        or creates new sftp connection.
+        If no, it calls get sftp to check next sftp from queue
+        or creates new sftp connection if all connection from queue are timed out.
         :return:
         """
 
@@ -201,59 +192,34 @@ class TransferManager(Thread, metaclass=SingletonMeta):
 
         def return_sftp():
             if not self.sftp_queue.empty():
-                sftp = self.sftp_queue.get()
+                _sftp = self.sftp_queue.get()
                 logger.info('GOT SFTP')
                 try:
-                    sftp.execute('ls')
+                    _sftp.execute('ls')
                 except ConnectionResetError as cre:
                     ex_log(f'SFTP DEAD {cre}')
-                    sftp.close()
+                    _sftp.close()
                     return None
                 except Exception as ex:
                     ex_log(f'SFTP DEAD {ex}')
-                    sftp.close()
+                    _sftp.close()
                     return None
                 else:
                     logger.info('SFTP ALIVE')
-                    return sftp
+                    return _sftp
             else:
                 logger.info('SFTP QUEUE EMPTY')
-                sftp = self.connect()
-                if not sftp:
+                _sftp = self.connect()
+                if not _sftp:
                     logger.info('SFTP NONE')
                     return None
                 logger.info('SFTP OK')
-                return sftp
-
+                return _sftp
 
         while True:
             sftp = return_sftp()
             if sftp:
                 return sftp
-
-        #print('GET SFTP')
-        #if not self.sftp_queue.empty():
-        #    sftp = self.sftp_queue.get()
-        #    print('     GOT SFTP', sftp)
-        #    print('     IS ACTIVE', sftp._transport.is_active())
-        #    try:
-        #        sftp._transport.send_ignore()
-        #    except EOFError:
-        #        print('     SFTP DEAD')
-        #        sftp.close()
-        #        self.get_sftp()
-        #    else:
-        #        print('     SFTP ALIVE')
-        #        return sftp
-        #else:
-        #    print('     SFTP QUEUE EMPTY')
-        #    sftp = self.connect()
-        #    if not sftp:
-        #        self.reconnect()
-        #        print('RETURN NONE')
-        #        return None
-        #    print('     RETURN SFTP')
-        #    return sftp
 
     def connection_error(self):
         self.stop_transfers()
@@ -352,21 +318,6 @@ class TransferManager(Thread, metaclass=SingletonMeta):
         else:
             return False
 
-    #def lock_destination(self, destination, instance):
-    #    if destination not in self.locked_destinations:
-    #
-    #        confirm_popup(callback=self.directory_created,
-    #                      text=f'You are going to transfer file to destination directory that already exists'
-    #                           f'and it is a file.'
-    #                           f''
-    #                           f'Do you agree to remove file in order to create a directory and transfer '
-    #                           f'all files?',
-    #                      title='I\'no idea how to explain you that case.',
-    #                      _args=[destination, instance]
-    #                      )
-    #
-    #    self.locked_destinations.add(destination)
-
     def directory_created(self, destination, instance):
 
         """
@@ -392,7 +343,7 @@ class TransferManager(Thread, metaclass=SingletonMeta):
 
         for root, dirs, files in os.walk(src_path):
             relative_path = root.replace(local_base, '')[1:]
-            relative_path = posix_path(dst_path, *relative_path.split('\\'))
+            relative_path = pure_posix_path(dst_path, *relative_path.split('\\'))
 
             for file in files:
                 self.put_transfer({'type': 'upload',

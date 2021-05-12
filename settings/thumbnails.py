@@ -22,7 +22,7 @@ class Thumbnails(RelativeLayout):
         #     self.ids.default_remote_err.text = f"Path doesn't exists"
         #     err = True
         if err:
-            return
+            return False
 
         config.read(config_file)
         try:
@@ -33,6 +33,11 @@ class Thumbnails(RelativeLayout):
         config.set('SETTINGS', 'enable_thumbnails', enable_thumbnails)
         with open(config_file, 'w') as f:
             config.write(f)
+        return True
 
     def on_dismiss(self):
-        self.save_config()
+        saved = self.save_config()
+        if saved:
+            return True
+        else:
+            return False

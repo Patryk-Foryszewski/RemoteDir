@@ -30,6 +30,7 @@ class Connection:
 
     def read_config(self):
         self.config = get_config()
+
         self.server = self.config.get('CREDENTIALS', 'server')
         self.user = self.config.get('CREDENTIALS', 'user')
         password = self.config.get('CREDENTIALS', 'password')

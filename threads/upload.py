@@ -1,5 +1,5 @@
 from threading import Thread
-from common import posix_path, mk_logger, thumb_dir, get_dir_attrs
+from common import pure_posix_path, mk_logger, thumb_dir, get_dir_attrs
 from processes.thumbnail import ThumbnailGenerator
 import os
 from paramiko.ssh_exception import SSHException
@@ -19,7 +19,7 @@ class Upload(Thread):
         self.dst_path = data['dst_path']
         self.src_path = data['src_path']
         self.file_name = os.path.split(self.src_path)[1]
-        self.full_remote_path = posix_path(self.dst_path, self.file_name)
+        self.full_remote_path = pure_posix_path(self.dst_path, self.file_name)
         self.manager = manager
         self.bar = bar
         self.sftp = sftp
@@ -47,7 +47,7 @@ class Upload(Thread):
             self.bar.set_values(desc=f'File {self.file_name} does\'t exists')
 
         except FileExistsError as fe:
-            print('FILE EXISTS ERROR', self.data)
+
             fe = str(fe)
             if fe == 'opt1':
                 text = f'File {self.full_remote_path} already exists'
@@ -69,6 +69,10 @@ class Upload(Thread):
                 self.skip()
                 text = f'File {self.full_remote_path} already exists. Skipped, size not different'
                 logger.info(text)
+
+            else:
+                text = f'FileExistsError unknown'
+                ex_log(text)
 
         except IOError as io:
             io = str(io)
@@ -114,7 +118,7 @@ class Upload(Thread):
                     self.bar.set_values(f'Uploading thumbnail of {self.file_name}')
 
                     if self.thumb_dir_exists():
-                        self.put(th.thumb_path, posix_path(self.dst_path, thumb_dir, th.thumb_name), True)
+                        self.put(th.thumb_path, pure_posix_path(self.dst_path, thumb_dir, th.thumb_name), True)
                     else:
                         logger.info(f'Thumbnail for {self.file_name} not uploaded')
             except Exception as ex:
@@ -149,7 +153,6 @@ class Upload(Thread):
                 raise FileExistsError('opt2')
 
             elif self.settings == 'opt3':
-                print('REMOVE', self.full_remote_path)
                 self.sftp.remove(self.full_remote_path)
                 return True
 
@@ -185,7 +188,7 @@ class Upload(Thread):
     def thumb_dir_exists(self):
         thdr = None
         try:
-            thdr = posix_path(self.dst_path, thumb_dir)
+            thdr = pure_posix_path(self.dst_path, thumb_dir)
             if not self.sftp.exists(thdr):
                 self.sftp.makedirs(thdr)
         except Exception as ex:
@@ -200,6 +203,5 @@ class Upload(Thread):
             self.manager.run()
 
     def skip(self):
-        print('SKIP')
         self.done = True
         self.bar.set_values(f'Uploading {self.src_path} to {self.dst_path} - Skipped')

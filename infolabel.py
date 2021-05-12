@@ -11,12 +11,12 @@ class InfoLabel(Label):
         self.popup = popup
         self.text = text
 
-    def dismiss_me(self, text):
+    def dismiss_me(self, text, delay=3):
         self.text = text
         if self.popup:
             def dismiss(_):
                 self.popup.dismiss()
-            Clock.schedule_once(dismiss, 3)
+            Clock.schedule_once(dismiss, delay)
 
     def on_text(self, *args):
         pass

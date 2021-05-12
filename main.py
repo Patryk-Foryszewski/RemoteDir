@@ -19,15 +19,21 @@ from bulbimage import BulbImage
 from progressbox import ProgressBox
 from filesspace import FilesSpace
 from associationrow import AssociationRow
+import platform
 import os
 import sys
+
 logger = mk_logger(__name__)
+logger.info('REMOTEDIR RUN')
+logger.info(f'PYTHON VERSION {sys.version}')
+logger.info(f'PYTHON INFO {sys.version_info}')
+logger.info(f'SYSTEM INFO {platform.platform()}')
+logger.info(f'SYS ARGV {sys.argv}')
 
 
 class Main(App):
-    def build(self):
 
-        logger.info('APP STARTED')
+    def build(self):
         setattr(self, 'img_path', img_path)
         setattr(self, 'thumbnails', thumbnails())
         self.title = f'RemoteDir of {app_name}.  {version}'
@@ -43,13 +49,13 @@ class Main(App):
         except Exception as ex:
             logger.exception(f'Failed to load .kv {ex}')
         else:
-            front = Builder.load_file(resource_path('front', 'main.kv'))
-            return front
+            return Builder.load_file(resource_path('front', 'main.kv'))
 
 
 if 'kill' in sys.argv:
     index = sys.argv.index('kill')
     to_kill = sys.argv[index+1]
+    logger.info(f'Killing {to_kill}')
     os.system(f'{os.environ["HOMEDRIVE"]}\windows\system32\\taskkill.exe /f /im {to_kill}')
 
 

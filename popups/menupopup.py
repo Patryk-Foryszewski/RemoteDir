@@ -108,10 +108,10 @@ class MenuPopup(ModalView):
             valign = 'top'
         elif window_height - y > self.height:
             pos_y = y
-            valign = 'bottom'
+            valign = 'y'
         else:
             pos_y = 10
-            valign = 'bottom'
+            valign = 'y'
 
         pos_x = pos_x / window_width
         pos_y = pos_y / window_height

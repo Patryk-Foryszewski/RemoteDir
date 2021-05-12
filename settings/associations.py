@@ -61,18 +61,16 @@ class Associations(BoxLayout):
         self.ids.associations_space.add_widget(ast)
 
     def save(self):
-        print('SAVE ASSOTIATIONS CONFIG')
         config = get_config()
         if config:
             config.remove_section(self.section)
             with open(config_file, 'w+') as f:
-                config.write(f)               
-            print('     ROWS', len(self.ids.associations_space.children))
+                config.write(f)
             for association_row in self.ids.associations_space.children:
                 association = association_row.get_association()
-                print('     ASSOCIATION', association)
                 if association:
                     self.add_association(association_row)
 
     def on_dismiss(self):
         self.save()
+        return True

@@ -3,7 +3,7 @@ from kivy.graphics import Color, Rectangle
 from kivy.properties import ObjectProperty
 from kivy.core.window import Window
 from kivy.app import App
-from common import confirm_popup, menu_popup, posix_path, is_file, mk_logger, thumbnail_popup, hidden_files
+from common import confirm_popup, menu_popup, pure_posix_path, is_file, mk_logger, thumbnail_popup, hidden_files
 from common import write_to_config, check_for_updates
 import win32clipboard as clipboard
 from filetile import FileTile
@@ -269,15 +269,12 @@ class FilesSpace(StackLayout):
         """
         if self.touched_file:
             self.find_selected_files()
-
             if len(self.selected_files) == 1:
                 buttons = ['Rename', 'Download', 'Open', 'Delete', 'File permissions']
                 if self.app.thumbnails:
                     buttons.append('Add Thumbnail')
-
             else:
                 buttons = ['Delete', 'Download']
-
         else:
             buttons = ['Make dir', 'Refresh']
 
@@ -384,7 +381,7 @@ class FilesSpace(StackLayout):
         """Called from IconController when it detects widget collision"""
         for mfile in self.selected_files:
             old = mfile.filename
-            new = posix_path(file.filename, mfile.filename)
+            new = pure_posix_path(file.filename, mfile.filename)
             self.originator.rename_file(old, new, mfile)
 
     def unfocus_files(self, files=None):
@@ -489,8 +486,8 @@ class FilesSpace(StackLayout):
             path = self.originator.current_path
             if path:
                 for file in self.copied_files:
-                    old = posix_path(file.path, file.filename)
-                    new = posix_path(path, file.filename)
+                    old = pure_posix_path(file.path, file.filename)
+                    new = pure_posix_path(path, file.filename)
                     self.rename_file(old, new, file)
                     self.copied_files.remove(file)
 
@@ -507,9 +504,9 @@ class FilesSpace(StackLayout):
 
     def remove_popup(self):
         self.originator.on_popup()
-        text = 'files' if len(self.selected_files) > 1 else 'file'
+        text = 'these files' if len(self.selected_files) > 1 else ' this file'
         confirm_popup(callback=self.remove,
-                      text=f'Are you sure you want to remove this {text} permanently?',
+                      text=f'Are you sure you want to remove {text} permanently?',
                       movable=True)
 
         self.on_popup()

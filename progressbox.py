@@ -36,22 +36,26 @@ class ProgressBox(BoxLayout):
         if hide:
             self.ids.scroll.height = 0
             self.hide_actions()
-            self.ids.show_bars.src_path = img_path('arrow_up.png')
+            self.ids.show_bars.source = img_path('arrow_up.png')
 
         else:
             self.ids.scroll.height = .7 * Window.height
-            self.ids.show_bars.src_path = img_path('arrow_down.png')
+            self.ids.show_bars.source = img_path('arrow_down.png')
 
     def transfer_start(self):
+
+        self.ids.stop.disabled = False
         self.ids.short_info.text = 'Transferring files'
 
     def transfer_stop(self):
-        for bar in self.ids.bars_space.children:
-            if not bar.my_thread.done:
-                break
-        else:
-            self.ids.short_info.text = 'Files transferred'
-            self.flush()
+        # for bar in self.ids.bars_space.children:
+        #     if not bar.my_thread.done:
+        #         break
+        # else:
+        #     self.ids.short_info.text = 'Files transferred'
+        #     self.flush()
+        self.ids.short_info.text = 'Files transferred'
+        self.flush()                                  
 
     def show_actions(self):
         self.ids.actions.height = 26
@@ -83,9 +87,9 @@ class ProgressBox(BoxLayout):
     def stop(self):
         self.manager.stop_transfers()
 
-    def flush(self):
-        #self.ids.progress.width = 0
-        #self.ids.percent.text = ''
+    def flush(self, delay=3):
+        self.ids.stop.disabled = True
+
         def clear(_):
             self.ids.short_info.text = ''
-        Clock.schedule_once(clear, 3)
+        Clock.schedule_once(clear, delay)

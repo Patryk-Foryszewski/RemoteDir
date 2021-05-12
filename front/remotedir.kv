@@ -31,6 +31,13 @@
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.go_forward()
+            BulbImage:
+                source: app.img_path('arrow_up.png')
+                mouse_locked: root.mouse_locked
+                on_touch_up:
+                    if self.collide_point(*args[1].pos) :\
+                    root.go_up()
+
 
             TextInput:
                 id: current_path
@@ -50,6 +57,7 @@
                 on_touch_up:
                     if self.collide_point(*args[1].pos) :\
                     root.show_history(current_path)
+
             TextInput:
                 id: search
                 width: 140

@@ -4,9 +4,6 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.app import App
 from colors import colors
-#from common import credential_popup, menu_popup, confirm_popup, posix_path, find_thumb, thumbnails
-#from common import remote_path_exists, get_dir_attrs, mk_logger, download_path, default_remote, thumb_dir, thumbnail_ext
-#from common import thumb_dir_path, pure_windows_path, info_popup,
 from common import *
 from sftp.connection import Connection
 from exceptions import *
@@ -18,7 +15,6 @@ from paramiko.ssh_exception import SSHException, AuthenticationException, BadAut
 import copy
 from functools import partial
 from popups.settings import Settings
-from threads.updater import Updater
 
 logger = mk_logger(__name__)
 ex_log = mk_logger(name=f'{__name__}-EX',
@@ -47,17 +43,18 @@ class RemoteDir(BoxLayout):
         self.tasks_queue = None
         self.connection = None
         self._y = None
-        self.childs_to_light = None
+        self.children_to_light = None
         self.files_space = None
         self.progress_box = None
         self.app = App.get_running_app()
         self.reconnection_tries = 0
         self.callback = None
         self.current_history_index = 0
-        setattr(App, 'connect', self.connect)
+        self.history_popup = None
+        self.transfer_manager = None
 
     def on_kv_post(self, base_widget):
-        self.childs_to_light = [self.ids.current_path, self.ids.search]
+        self.children_to_light = [self.ids.current_path, self.ids.search]
         self.files_space = self.ids.files_space
         self.progress_box = self.ids.progress_box
         self.base_path = ''
@@ -72,15 +69,15 @@ class RemoteDir(BoxLayout):
 
     def print_tree(self):
         [print(type(widget)) for widget in self.walk(restrict=True)]
-        #def save_state(widget, depth=0):
-        #    for child in widget.children:
-        #        if len(widget.children):
-        #            depth+=1
-        #        print(f'{depth * "   "}CHILD', child)
-        #        save_state(child)
+        # def save_state(widget, depth=0):
+        #     for child in widget.children:
+        #         if len(widget.children):
+        #             depth+=1
+        #         print(f'{depth * "   "}CHILD', child)
+        #         save_state(child)
         #
-        #for child in self.children:
-        #    save_state(child, depth=0)
+        # for child in self.children:
+        #     save_state(child, depth=0)
 
     def absolute_path(self, relative_path):
         """
@@ -88,15 +85,15 @@ class RemoteDir(BoxLayout):
         :param relative_path:
         """
 
-        return posix_path(self.base_path, relative_path)
+        return pure_posix_path(self.base_path, relative_path)
 
-    def relative_path(self, path):
+    def relative_path(self, _path):
         """
         Cuts out give full path to working diectory with path user logs into.
-        :param path:
+        :param _path:
         :return:
         """
-        return path[len(self.base_path)+1:]
+        return _path[len(self.base_path)+1:]
 
     def on_current_path(self, *_):
         """
@@ -108,22 +105,23 @@ class RemoteDir(BoxLayout):
         else:
             self.ids.current_path.text = ''
 
-    def chdir_from_input(self, path):
+    def chdir_from_input(self, _path):
+
         """
         Change directory to path user type into text input.
-        :param path:
+        :param _path:
         :return:
         """
 
-        path = path.lstrip('/')
-        path = path.lstrip('\\')
-        self.chdir(posix_path(self.base_path, path))
+        _path = _path.lstrip('/')
+        _path = _path.lstrip('\\')
+        self.chdir(pure_posix_path(self.base_path, _path))
 
     def on_mouse_move(self, _, mouse_pos):
 
         if not self.mouse_locked:
 
-            for child in self.childs_to_light:
+            for child in self.children_to_light:
                 if child.focus:
                     child.background_color = child.focused_color
 
@@ -134,13 +132,16 @@ class RemoteDir(BoxLayout):
                     child.background_color = child.unactive_color
 
     def mouse_disabled(self):
+
         return self.mouse_locked
 
     def on_touch_up(self, touch):
+        print('TOUCH UP')
         if not self.mouse_disabled():
             return super().on_touch_up(touch)
 
     def on_touch_down(self, touch):
+        print('TOUCH DOWN')
         if not self.mouse_disabled():
             return super().on_touch_down(touch)
 
@@ -164,7 +165,7 @@ class RemoteDir(BoxLayout):
         """
         if not thumbnails():
             return
-        remote_thumbs_path = posix_path(self.get_current_path(), thumb_dir)
+        remote_thumbs_path = pure_posix_path(self.get_current_path(), thumb_dir)
         # noinspection PyBroadException
         try:
             remote_attrs = self.sftp.listdir_attr(remote_thumbs_path)
@@ -183,7 +184,7 @@ class RemoteDir(BoxLayout):
             else:
                 downloads.append(file.filename)
         if downloads:
-            src_path = posix_path(self.get_current_path(), thumb_dir)
+            src_path = pure_posix_path(self.get_current_path(), thumb_dir)
             task = {'type': 'thumbdownload',
                     'src_path': src_path,
                     'dst_path': self.get_current_path(),
@@ -201,7 +202,6 @@ class RemoteDir(BoxLayout):
         """
 
         self.compare_thumbs()
-        #popup, content = info_popup(f'Listing {file_name(self.get_current_path())} directory')
         if not attrs_list:
             try:
                 attrs_list = self.sftp.listdir_attr()
@@ -210,11 +210,9 @@ class RemoteDir(BoxLayout):
                     self.callback = self.list_dir
                     self.connect()
             except Exception as ex:
-                #content.text = f'List dir exception {ex}'
                 ex_log(f'List dir exception {ex}')
                 return
             else:
-                #popup.dismiss()
                 self.add_attrs(attrs_list)
         self.files_space.fill(attrs_list)
 
@@ -235,17 +233,18 @@ class RemoteDir(BoxLayout):
         """
         self.files_space.unfocus_all()
 
-    def add_file(self, path=None, attrs=None, _=None, from_search=False):
+    def add_file(self, _path=None, attrs=None, _=None, from_search=False):
         """
-        Adds file to view. If file comes as search outcome it already has path attr added.
+        Adds file to view. If file comes as search outcome it already has _path attr added.
         Do not overwrite it.
-        :param path:
+        :param _: empty
+        :param _path:
         :param attrs: object,  attrs of fille
         :param from_search: Boolean. Tells if file is search outcome.
         :return:
         """
 
-        if self.is_current_path(path):
+        if self.is_current_path(_path):
             self.add_attrs([attrs])
             self.files_space.add_file(attrs)
         elif from_search:
@@ -334,7 +333,7 @@ class RemoteDir(BoxLayout):
 
         try:
             self.sftp.mkdir(name)
-            attrs = get_dir_attrs(_path=posix_path(self.get_current_path(), name), sftp=self.sftp)
+            attrs = get_dir_attrs(_path=pure_posix_path(self.get_current_path(), name), sftp=self.sftp)
         except Exception as ex:
             ex_log(f'Make dir exception {ex}')
             return False
@@ -362,29 +361,41 @@ class RemoteDir(BoxLayout):
             self.password = password
 
         self.connection = Connection(self.password)
+        text = 'Connecting to server'
+        info = info_popup(text)[1]
+
         try:
             self.connection.start()
         except ConfigNotFound:
             ex_log('Config not found')
+            info.dismiss_me('', 0)
             credential_popup(on_popup=self.on_popup,
                              on_popup_dismiss=self.on_popup_dismiss)
             return False
+
         except InvalidConfig as ic:
+            info.dismiss_me('', 0)
             credential_popup(errors=ic.errors,
                              on_popup=self.on_popup,
                              on_popup_dismiss=self.on_popup_dismiss)
             return False
+
         except HosKeyNotFound as nf:
+            info.dismiss_me('', 0)
             logger.info('Host key not found')
             self.connection.hostkeys.connect = self.connect
             self.connection.hostkeys.hostkey_popup(nf.message)
             return False
+
         except HostkeyMatchError as me:
+            info.dismiss_me('', 0)
             ex_log(f'Hostkey\'s match error {me.message}')
             self.connection.hostkeys.connect = self.connect
             self.connection.hostkeys.hostkey_popup(me.message)
             return False
+
         except PasswordEncrypted as pe:
+            info.dismiss_me('', 0)
             credential_popup(errors={'message': str(pe), 'errors': []},
                              on_popup=self.on_popup,
                              on_popup_dismiss=self.on_popup_dismiss)
@@ -392,34 +403,41 @@ class RemoteDir(BoxLayout):
 
         except BadAuthenticationType as bat:
             ex_log(f'Authentication exception, {str(bat)}')
+            info.dismiss_me('', 0)
             credential_popup(errors={'errors': '', 'message': f'{str(bat)}'},
                              on_popup=self.on_popup,
                              on_popup_dismiss=self.on_popup_dismiss)
 
         except AuthenticationException as ae:
             ex_log(f'Authentication exception, {str(ae)}')
+            info.dismiss_me('', 0)
             credential_popup(errors={'errors': '', 'message': f'{str(ae)}'},
                              on_popup=self.on_popup,
                              on_popup_dismiss=self.on_popup_dismiss)
 
         except SSHException as she:
-            logger.info(f'Connection exception, {she}')
+            text = f'Connection exception, {she}'
+            logger.info(text)
+            info.text = text
             if 'not a valid' in str(she):
                 credential_popup(errors={'errors': ['private_key'], 'message': f'{str(she)[0].upper()}{str(she)[1:]}'},
                                  on_popup=self.on_popup,
                                  on_popup_dismiss=self.on_popup_dismiss)
             else:
-                popup, content = info_popup(str(she))
-                content.dismiss_me(str(she))
+                info.dismiss_me(str(she))
                 self.reconnect()
 
         except FileNotFoundError:
+            info.dismiss_me('', 0)
             credential_popup(errors={'errors': ['private_key'], 'message': 'Private key file doesn\'t exist'},
                              on_popup=self.on_popup,
                              on_popup_dismiss=self.on_popup_dismiss)
 
         except Exception as ex:
-            ex_log(f'Unknown connection exception, {ex}')
+            text = f'Unknown connection exception, {ex}'
+            info.text = text
+            info.dismiss_me(text)
+            ex_log(text)
 
         else:
             if self.sftp:
@@ -429,21 +447,26 @@ class RemoteDir(BoxLayout):
                 self.reconnect()
                 return False
             self.reconnection_tries = 0
+            info.dismiss_me('Succesfully connected to server', 2)
             logger.info('Succesfully connected to server')
             self.chdir(self.current_path)
             self.get_base_path()
             self.do_callback()
             self.mouse_locked = False
             Clock.schedule_once(partial(self.connect, None, self.password), 3540)
-            return True
 
     def do_callback(self):
+        """
+        In case of connection error when callback is set it is called after successful reconnection to server.
+        :return:
+        """
+
         if self.callback:
             self.callback()
             self.callback = None
 
-    def remote_path_exists(self, path):
-        return remote_path_exists(path, self.sftp)
+    def remote_path_exists(self, _path):
+        return remote_path_exists(_path, self.sftp)
 
     def reconnect(self):
         logger.info('Reconnecting to remote server')
@@ -467,7 +490,7 @@ class RemoteDir(BoxLayout):
             self.bcolor = colors['active_window_color']
 
     def execute_sftp_task(self, task):
-        if not hasattr(self, 'transfer_manager'):
+        if not self.transfer_manager:
             self.tasks_queue = queue.Queue()
             self.transfer_manager = TransferManager(tasks_queue=self.tasks_queue,
                                                     originator=self,
@@ -479,7 +502,7 @@ class RemoteDir(BoxLayout):
             self.transfer_manager.run()
 
     def download(self, file):
-        src_path = posix_path(self.get_current_path(), file.filename)
+        src_path = pure_posix_path(self.get_current_path(), file.filename)
         task = {'type': 'download', 'src_path': src_path, 'dst_path': download_path(), 'attrs': file.attrs}
         self.execute_sftp_task(task)
 
@@ -494,13 +517,13 @@ class RemoteDir(BoxLayout):
 
         else:
             if file.file_type == 'dir':
-                path = file.attrs.path
+                _path = file.attrs.path
             else:
-                path = posix_path(file.attrs.path, file.filename)
+                _path = pure_posix_path(file.attrs.path, file.filename)
 
             try:
-                self.sftp.chmod(path, mode)
-                attrs = get_dir_attrs(path, self.sftp)
+                self.sftp.chmod(_path, mode)
+                attrs = get_dir_attrs(_path, self.sftp)
             except Exception as ex:
                 ex_log(f'Failed to change file mode {ex}')
             else:
@@ -509,25 +532,38 @@ class RemoteDir(BoxLayout):
                 logger.info('File mode changed successfully')
                 popup.dismiss()
 
-    def external_dropfile(self, local_path, destination):
+    def external_dropfile(self, local_path, _dst_path):
         """
         When file is dropped from Windows.
         Creates upload thread if doesn't exists and adds file path to queue
         """
-        destination = self.get_current_path() if not destination else posix_path(self.get_current_path(), destination)
+        _dst_path = self.get_current_path() if not _dst_path else pure_posix_path(self.get_current_path(), _dst_path)
         local_path = local_path.decode(encoding='UTF-8', errors='strict')
         task = {'type': 'upload',
                 'src_path': local_path,
-                'dst_path': destination,
+                'dst_path': _dst_path,
                 'thumbnails': self.app.thumbnails}
 
         self.execute_sftp_task(task)
+
+    def go_up(self):
+        """
+        Goes one directory up
+        :return:
+        """
+
+        if self.current_path == self.base_path:
+            info, content = info_popup('')
+            content.dismiss_me('Can not go any higher')
+            return
+        self.chdir(pure_posix_path(*os.path.split(self.current_path)[:-1]))
 
     @staticmethod
     def get_history_action(act):
         return act['action']
 
     def show_history(self, widget):
+        logger.info('Show history')
         prepared = []
         go_to = []
         index_map = {}
@@ -540,8 +576,8 @@ class RemoteDir(BoxLayout):
             if action == 'search':
                 prepared.append(f'{index} Searching for: {act["text"]}')
             elif action == 'listed':
-                path = act["go_to"]
-                prepared.append(f'{index} {path if path else "Default path"}')
+                _path = act["go_to"]
+                prepared.append(f'{index} {_path if _path else "Default path"}')
             index_map[index] = _index
             index += 1
 
@@ -610,13 +646,14 @@ class RemoteDir(BoxLayout):
         """
         Shows Settings Popup with list of options
         """
+        logger.info('Show settings popup')
         Settings(on_open=self.on_popup, on_dismiss=self.on_popup_dismiss)
 
     def on_popup(self, *_):
         """
-        Lock mouse when popup is shown so moving files, lighting widgets etc stops working
+        Lock mouse when popup is shown so moving files, highlighting widgets etc stops working
         """
-
+        logger.info('POPUP OPEN')
         self.files_space.unbind_external_drop('on_popup')
         self.mouse_locked = True
 
@@ -624,7 +661,8 @@ class RemoteDir(BoxLayout):
         """
         Unlocks mouse when popup is dismissed
         """
-
+        print('POPUP DISMISS', args)
+        logger.info('POPUP DISMISS')
         self.files_space.bind_external_drop('on_popup_dismiss')
         self.mouse_locked = False
 
@@ -641,35 +679,36 @@ class RemoteDir(BoxLayout):
         Removes given file from remote disk and if removed succesfully removes from view.
         :param file: Instance of Icons wigdets like FileTile or FileDetails
         """
+        logger.info(f'Removing file {file}')
         cwd = self.sftp.getcwd()
-        path = posix_path(cwd if cwd else '.', file.filename)
+        _path = pure_posix_path(cwd if cwd else '.', file.filename)
         if file.file_type == 'dir':
-            self.rmdir(path, file)
+            self.rmdir(_path, file)
         else:
             # noinspection PyBroadException
             try:
-                self.sftp.remove(path)
+                self.sftp.remove(_path)
             except IOError as ie:
                 ex_log(f'Failed to remove file {ie}')
                 if ie.errno == 2:
-                    if not self.sftp.exists(path):
+                    if not self.sftp.exists(_path):
                         self.remove_from_view(file)
             except Exception as ex:
                 ex_log(f'Failed to remove file {ex}')
             else:
                 self.remove_from_view(file)
 
-    def get_file_attrs(self, path):
+    def get_file_attrs(self, _path):
         """
         Gets remote file attrs.
-        :param path: posix_path to remote file.
+        :param _path: posix_path to remote file.
         :return:
         """
 
         # noinspection PyBroadException
         try:
-            attrs = self.sftp.lstat(path)
-            attrs.filename = os.path.split(path)[1]
+            attrs = self.sftp.lstat(_path)
+            attrs.filename = os.path.split(_path)[1]
             attrs.longname = str(attrs)
         except Exception as ex:
             ex_log(f'Failed to get file attrs {ex}')
@@ -679,11 +718,13 @@ class RemoteDir(BoxLayout):
 
     def rename_thumbnail(self, old_path, old_name, new_path, new_name):
         """
-        If user has enabled thumbnails they has be renamed when file is renamed.
-        :param path: posix_path to remote file.
+        If user has enabled thumbnails they has be rename when file is renamed.
+        :param old_path: posix_path to remote file.
+        :param old_name: name that will be changed
+        :param new_path:
+        :param new_name:
         :return:
         """
-
         if self.app.thumbnails:
             from common import find_thumb
             old_local_thumbnail = find_thumb(old_path, old_name)
@@ -702,11 +743,11 @@ class RemoteDir(BoxLayout):
                 except Exception as ex:
                     ex_log('Failed to rename local thumbnail', ex)
 
-                old_remote_thumbnail = posix_path(old_path, thumb_dir, old_name)
-                path_to_remote_thumb = posix_path(new_path, thumb_dir)
-                new_remote_thumbnail = posix_path(path_to_remote_thumb, new_name)
+                old_remote_thumbnail = pure_posix_path(old_path, thumb_dir, old_name)
+                path_to_remote_thumb = pure_posix_path(new_path, thumb_dir)
+                new_remote_thumbnail = pure_posix_path(path_to_remote_thumb, new_name)
                 try:
-                    path_to_remote_thumb = posix_path(new_path, thumb_dir)
+                    path_to_remote_thumb = pure_posix_path(new_path, thumb_dir)
                     if not self.sftp.exists(path_to_remote_thumb):
                         self.sftp.makedirs(path_to_remote_thumb)
                     if self.sftp.exists(new_remote_thumbnail):
@@ -796,18 +837,21 @@ class RemoteDir(BoxLayout):
     def transfer_stop(self):
         self.progress_box.transfer_stop()
 
-    def chdir(self, path):
+    def chdir(self, _path):
         """
         Change current working directory to given path. If path was not visited earlier adds
         act to history.
-        :param path: posix path to be listed
+        :param _path: posix path to be listed
         """
-
+        text = f'Listing directory {filename(_path)}'
+        info, content = info_popup(text)
         # noinspection PyBroadException
         try:
-            self.sftp.chdir(path)
+            self.sftp.chdir(_path)
         except IOError as ie:
-            ex_log(f'Failed to change dir {ie}')
+            error = f'Failed to change dir {ie}'
+            content.dismiss_me(error)
+            ex_log(error)
             if ie.errno == 2:
                 self.chdir(self.current_path)
             elif str(ie) == 'Socket is closed':
@@ -816,12 +860,15 @@ class RemoteDir(BoxLayout):
                 logger.warning('Could not list directory. Permission denied.')
             return False
         except Exception as ex:
-            ex_log(f'Failed to change dir {ex}')
+            error = f'Failed to change dir {ex}'
+            content.dismiss_me(error)
+            ex_log(error)
             self.reconnect()
             return False
         else:
             self.list_dir()
-            self.current_path = path
+            content.dismiss_me(text)
+            self.current_path = _path
             for act in self.history:
                 if act['action'] == 'listed' and act['go_to'] == self.get_current_path():
                     break
@@ -830,13 +877,13 @@ class RemoteDir(BoxLayout):
 
             return True
 
-    def is_current_path(self, path):
+    def is_current_path(self, _path):
         """
         Checks if given path is current path
-        :param path: posix path of remote
-        :return: True if give path is current path
+        :param _path: posix path of remote
+        :return: True if give path is current path else False
         """
-        return path == self.get_current_path()
+        return _path == self.get_current_path()
 
     def get_current_path(self):
         """
@@ -855,11 +902,11 @@ class RemoteDir(BoxLayout):
         :param file: instance of FileTile, FileDetails etc.
         """
 
-        full_path = posix_path(file.attrs.path, file.filename)
+        full_path = pure_posix_path(file.attrs.path, file.filename)
         if file.file_type == 'dir':
             self.chdir(full_path)
             self.current_history_index += 1
         else:
-            src_path = posix_path(full_path)
+            src_path = pure_posix_path(full_path)
             task = {'type': 'open', 'src_path': src_path}
             self.execute_sftp_task(task)

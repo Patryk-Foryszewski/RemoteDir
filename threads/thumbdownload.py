@@ -1,5 +1,5 @@
 from threading import Thread
-from common import mk_logger, posix_path, pure_windows_path, cache_path, thumb_dir, local_path_exists
+from common import mk_logger, pure_posix_path, pure_windows_path, cache_path, thumb_dir, local_path_exists
 from os import makedirs
 
 logger = mk_logger(__name__)
@@ -22,7 +22,7 @@ class ThumbDownload(Thread):
     def run(self):
         for thumbnail in self.thumbnails:
             try:
-                src = posix_path(self.src_path, thumbnail)
+                src = pure_posix_path(self.src_path, thumbnail)
                 if not local_path_exists(self.dst_path):
                     makedirs(self.dst_path)
                 self.sftp.get(src, pure_windows_path(self.dst_path, thumbnail), preserve_mtime=True)
