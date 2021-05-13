@@ -353,7 +353,6 @@ class RemoteDir(BoxLayout):
     def keep_alive(self):
         def check(_):
             try:
-                logger.info('KEEP CONNECTION ALIVE')
                 self.sftp.execute('ls')
             except SSHException as she:
                 ex_log(f'Can not keep connection alive {she}')
@@ -362,7 +361,6 @@ class RemoteDir(BoxLayout):
                 ex_log(f'Can not keep connection alive. Unknown err {ex}')
                 self.reconnect()
             else:
-                logger.info('CONNECTION OK')
                 self.keep_alive()
         Clock.schedule_once(check, 60)
 
