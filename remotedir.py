@@ -67,6 +67,7 @@ class RemoteDir(BoxLayout):
         self.set_view()
         check_for_updates(on_popup=self.on_popup, on_dismiss=self.on_popup_dismiss)
 
+
     def print_tree(self):
         [print(type(widget)) for widget in self.walk(restrict=True)]
         # def save_state(widget, depth=0):
@@ -136,12 +137,10 @@ class RemoteDir(BoxLayout):
         return self.mouse_locked
 
     def on_touch_up(self, touch):
-        print('TOUCH UP')
         if not self.mouse_disabled():
             return super().on_touch_up(touch)
 
     def on_touch_down(self, touch):
-        print('TOUCH DOWN')
         if not self.mouse_disabled():
             return super().on_touch_down(touch)
 
@@ -352,6 +351,22 @@ class RemoteDir(BoxLayout):
                    on_popup_dismiss=self.on_popup_dismiss
                    )
 
+    def keep_alive(self):
+        def check(_):
+            try:
+                logger.info('KEEP CONNECTION ALIVE')
+                self.sftp.execute('ls')
+            except SSHException as she:
+                ex_log(f'Can not keep connection alive {she}')
+                self.reconnect()
+            except Exception as ex:
+                ex_log(f'Can not keep connection alive. Unknown err {ex}')
+                self.reconnect()
+            else:
+                logger.info('CONNECTION OK')
+                self.keep_alive()
+        Clock.schedule_once(check, 60)
+
     def connect(self, popup=None, password=None, *_):
         self.mouse_locked = True
         if popup:
@@ -443,6 +458,7 @@ class RemoteDir(BoxLayout):
             if self.sftp:
                 self.sftp.close()
             self.sftp = self.connection.sftp
+            self.keep_alive()
             if not self.sftp:
                 self.reconnect()
                 return False
@@ -453,7 +469,7 @@ class RemoteDir(BoxLayout):
             self.get_base_path()
             self.do_callback()
             self.mouse_locked = False
-            Clock.schedule_once(partial(self.connect, None, self.password), 3540)
+            #Clock.schedule_once(partial(self.connect, None, self.password), 3540)
 
     def do_callback(self):
         """
@@ -653,15 +669,13 @@ class RemoteDir(BoxLayout):
         """
         Lock mouse when popup is shown so moving files, highlighting widgets etc stops working
         """
-        logger.info('POPUP OPEN')
         self.files_space.unbind_external_drop('on_popup')
         self.mouse_locked = True
 
-    def on_popup_dismiss(self, *args):
+    def on_popup_dismiss(self, *_):
         """
         Unlocks mouse when popup is dismissed
         """
-        print('POPUP DISMISS', args)
         logger.info('POPUP DISMISS')
         self.files_space.bind_external_drop('on_popup_dismiss')
         self.mouse_locked = False
