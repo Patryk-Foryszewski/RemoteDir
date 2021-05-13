@@ -16,9 +16,7 @@
 
 
 ## General Information
-- 
-- The purpose of this project was to learn basics of Python and kivy by creating 
-- Why did you undertake it?
+- The purpose of this project was to learn basics of Python and Kivy by creating an useful application.
 
 
 
