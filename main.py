@@ -5,6 +5,7 @@ Config.set('graphics', 'multisamples', '0')
 Config.set('graphics', 'width', '1066')
 Config.set('graphics', 'height', '600')
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
+Config.set('kivy', 'exit_on_escape', '0')
 
 
 from kivy.app import App
@@ -26,6 +27,7 @@ import sys
 import subprocess
 
 logger = mk_logger(__name__)
+s_log = mk_logger(f'{__name__}S', _format='#%(message)-100s#').info
 
 
 class Start:
@@ -36,12 +38,13 @@ class Start:
 
     @staticmethod
     def log():
-        logger.info(100 * '#')
-        logger.info(f'PYTHON VERSION {sys.version}')
-        logger.info(f'PYTHON INFO {sys.version_info}')
-        logger.info(f'SYSTEM INFO {platform.platform()}')
-        logger.info(f'SYS ARGV {sys.argv}')
-        logger.info(100 * '#')
+        s_log(100 * '#')
+        s_log(f' REMOTEDIR {version} RUN')
+        s_log(f' PYTHON VERSION {sys.version}')
+        s_log(f' PYTHON INFO {sys.version_info}')
+        s_log(f' SYSTEM INFO {platform.platform()}')
+        s_log(f' SYS ARGV {sys.argv}')
+        s_log(100 * '#')
 
     @staticmethod
     def add_exclusion():
