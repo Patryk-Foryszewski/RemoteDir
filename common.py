@@ -566,11 +566,14 @@ def write_to_config(section, key, value):
 
 
 def get_from_config(section, key):
-    config = get_config()
-    if not config.has_option(section, key):
+    # noinspection PyBroadException
+    try:
+        config = get_config()
+        value = config.get(section, key)
+    except Exception:
         return None
     else:
-        return config.get(section, key)
+        return value
 
 
 def check_for_updates(on_popup, on_dismiss):

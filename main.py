@@ -6,8 +6,7 @@ Config.set('graphics', 'width', '1066')
 Config.set('graphics', 'height', '600')
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
-from colors import colors
-from common import resource_path, img_path, thumbnails, app_name, version
+
 from kivy.app import App
 from kivy.lang.builder import Builder
 from remotedir import RemoteDir
@@ -19,16 +18,57 @@ from bulbimage import BulbImage
 from progressbox import ProgressBox
 from filesspace import FilesSpace
 from associationrow import AssociationRow
+from colors import colors
+from common import resource_path, img_path, thumbnails, app_name, version
 import platform
 import os
 import sys
+import subprocess
 
 logger = mk_logger(__name__)
-logger.info('REMOTEDIR RUN')
-logger.info(f'PYTHON VERSION {sys.version}')
-logger.info(f'PYTHON INFO {sys.version_info}')
-logger.info(f'SYSTEM INFO {platform.platform()}')
-logger.info(f'SYS ARGV {sys.argv}')
+
+
+class Start:
+    def __init__(self):
+        # self.add_exclusion()
+        self.log()
+        self.check_argv()
+
+    @staticmethod
+    def log():
+        logger.info(100 * '#')
+        logger.info(f'PYTHON VERSION {sys.version}')
+        logger.info(f'PYTHON INFO {sys.version_info}')
+        logger.info(f'SYSTEM INFO {platform.platform()}')
+        logger.info(f'SYS ARGV {sys.argv}')
+        logger.info(100 * '#')
+
+    @staticmethod
+    def add_exclusion():
+        """
+        Add path to windows defender exclusions (Doesn't work at the moment. User
+        has to add path manually)
+        """
+
+        exe_path = rf'{sys.argv[0]}'
+        cmd = f'powershell -inputformat none -outputformat none -NonInteractive ' \
+              f'-Command Add-MpPreference -ExclusionPath {exe_path}'
+        subprocess.run(["powershell", "-Command", cmd], capture_output=True)
+
+    @staticmethod
+    def check_argv():
+        """
+        Checks sys.argv for specific args and performs action.
+        """
+
+        if 'kill' in sys.argv:
+            index = sys.argv.index('kill')
+            to_kill = sys.argv[index + 1]
+            logger.info(f'Killing {to_kill}')
+            os.system(f'{os.environ["HOMEDRIVE"]}\windows\system32\\taskkill.exe /f /im {to_kill}')
+
+
+Start()
 
 
 class Main(App):
@@ -50,13 +90,6 @@ class Main(App):
             logger.exception(f'Failed to load .kv {ex}')
         else:
             return Builder.load_file(resource_path('front', 'main.kv'))
-
-
-if 'kill' in sys.argv:
-    index = sys.argv.index('kill')
-    to_kill = sys.argv[index+1]
-    logger.info(f'Killing {to_kill}')
-    os.system(f'{os.environ["HOMEDRIVE"]}\windows\system32\\taskkill.exe /f /im {to_kill}')
 
 
 if __name__ == '__main__':

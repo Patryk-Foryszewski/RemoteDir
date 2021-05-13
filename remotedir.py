@@ -67,7 +67,6 @@ class RemoteDir(BoxLayout):
         self.set_view()
         check_for_updates(on_popup=self.on_popup, on_dismiss=self.on_popup_dismiss)
 
-
     def print_tree(self):
         [print(type(widget)) for widget in self.walk(restrict=True)]
         # def save_state(widget, depth=0):

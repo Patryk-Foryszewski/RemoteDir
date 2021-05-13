@@ -124,25 +124,20 @@ class Credentials(BoxLayout):
 
     def validate(self):
         self.inputs = self.get_inputs()
-        print('VALIDATE', self.inputs)
-        print('1')
         valid = True
         if not self.inputs['server']:
             self.ids.server_err.text = 'Server name can not be empty'
-            print('2')
             valid = False
         else:
             self.ids.server_err.text = ''
 
         if not self.inputs['user']:
             self.ids.user_err.text = 'User name can not be empty'
-            print('3')
             valid = False
         else:
             self.ids.user_err.text = ''
 
         if not self.inputs['password'] and not self.inputs['private_key'] and not self.encrypted_password:
-            print('4')
             self.ids.password_err.text = 'Put a password'
             valid = False
         else:
@@ -150,11 +145,9 @@ class Credentials(BoxLayout):
 
         port = int_validation(self.inputs['port'])
         if not port[0]:
-            print('5')
             self.ids.port_err.text = 'Wrong port nr'
         else:
             self.ids.port_err.text = ''
-        print('VALID', valid)
         if valid:
             # Possibility of coping pkey file to program directory. Rethink if that can be useful.
             # if self.ids.copy_pkey.state == 'down':
@@ -165,7 +158,6 @@ class Credentials(BoxLayout):
             return False
 
     def on_dropfile(self, _, path):
-
         if self.dismissed:
             return
         self.path = path.decode(encoding='UTF-8', errors='strict')
@@ -214,10 +206,6 @@ class Credentials(BoxLayout):
 
     def save_config(self):
 
-        #if not self.validate():
-        #    print('NOT VALID')
-        #    return False
-
         if not os.path.exists(data_path):
             os.makedirs(data_path)
 
@@ -229,6 +217,7 @@ class Credentials(BoxLayout):
             config.add_section('CREDENTIALS')
         except Exception:
             pass
+
         config.set('CREDENTIALS', 'server', self.inputs['server'])
         config.set('CREDENTIALS', 'user', self.inputs['user'])
         config.set('CREDENTIALS', 'port', self.inputs['port'])
@@ -324,7 +313,7 @@ class Credentials(BoxLayout):
     def set_main_password(self):
         if not self.main_password_is_correct():
             return
-
+        self.inputs = self.get_inputs()
         main_password = self.ids.main_password_inp.text
         if not self.validate_password(main_password):
             self.message = 'Password too weak'
