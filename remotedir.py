@@ -353,7 +353,6 @@ class RemoteDir(BoxLayout):
     def keep_alive(self):
         def check(_):
             try:
-                logger.info('KEEP CONNECTION ALIVE')
                 self.sftp.execute('ls')
             except SSHException as she:
                 ex_log(f'Can not keep connection alive {she}')
@@ -362,7 +361,6 @@ class RemoteDir(BoxLayout):
                 ex_log(f'Can not keep connection alive. Unknown err {ex}')
                 self.reconnect()
             else:
-                logger.info('CONNECTION OK')
                 self.keep_alive()
         Clock.schedule_once(check, 60)
 
@@ -671,11 +669,10 @@ class RemoteDir(BoxLayout):
         self.files_space.unbind_external_drop('on_popup')
         self.mouse_locked = True
 
-    def on_popup_dismiss(self, *_):
+    def on_popup_dismiss(self, *args):
         """
         Unlocks mouse when popup is dismissed
         """
-        logger.info('POPUP DISMISS')
         self.files_space.bind_external_drop('on_popup_dismiss')
         self.mouse_locked = False
 

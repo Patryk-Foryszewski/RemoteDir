@@ -14,7 +14,7 @@ ex_log = ex_log.exception
 
 
 class ThumbnailPopup(BoxLayout):
-    def __init__(self, originator, destination, filename, sftp):
+    def __init__(self, originator, destination, filename, sftp, on_popup):
         super().__init__()
         self.originator = originator
         self.destination = destination
@@ -23,6 +23,7 @@ class ThumbnailPopup(BoxLayout):
         self.pic_name = None
         self.thumbnail = None
         Window.bind(on_dropfile=self.thumbnail_drop)
+        Clock.schedule_once(on_popup, 0.1)
 
     def thumbnail_drop(self, _, src_path):
         src_path = src_path.decode(encoding='UTF-8', errors='strict')
@@ -46,7 +47,7 @@ class ThumbnailPopup(BoxLayout):
         if th.ok:
             self.popup.title = 'Thumbnail generated'
             cache_pic = pure_windows_path(cache_path, self.destination.strip('/'), thumb_dir, self.pic_name)
-            print('CACHE PIC', th.thumb_path, cache_pic)
+
             try:
                 if not path.exists(dst_path(cache_pic)):
                     makedirs(dst_path(cache_pic))

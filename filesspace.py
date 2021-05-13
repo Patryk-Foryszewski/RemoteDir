@@ -284,7 +284,6 @@ class FilesSpace(StackLayout):
                    mouse_pos=self.to_window(*self.touch.pos),
                    on_popup=self.on_popup,
                    on_popup_dismiss=self.on_popup_dismiss)
-        self.on_popup()
 
     def menu(self, option):
         if option == 'Refresh':
@@ -300,7 +299,7 @@ class FilesSpace(StackLayout):
         elif option == 'Rename':
             self.touched_file.enable_rename()
         elif option == 'Add Thumbnail':
-            self.unbind_external_drop()
+            self.unbind_external_drop('add thumbnail')
             thumbnail_popup(originator=self,
                             destination=self.originator.get_current_path(),
                             _filename=self.touched_file.filename,
@@ -369,6 +368,10 @@ class FilesSpace(StackLayout):
         """
         When file is dropped or pasted from Windows
         """
+        print('EXT DROP', self.originator.mouse_disabled())
+        if self.originator.mouse_disabled():
+            return
+
         destination = None
         if window:
             touched = self.find_touched_file(self.to_widget(window._mouse_x, window.height - window._mouse_y))
@@ -496,7 +499,7 @@ class FilesSpace(StackLayout):
     def open_file(self, file):
         self.originator.open_file(file)
 
-    def on_popup(self):
+    def on_popup(self, *_):
         self.originator.on_popup()
 
     def on_popup_dismiss(self, *_):
