@@ -16,7 +16,7 @@ def app_name():
     return path.splitext(path.split(sys.argv[0])[1])[0]
 
 
-version = '1.0.34'
+version = '1.0.0'
 app_name = app_name()
 root_path = path.join(environ['LOCALAPPDATA'], 'RemoteDir')
 data_path = path.join(root_path, app_name)
