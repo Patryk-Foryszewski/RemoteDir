@@ -1,5 +1,5 @@
 # RemoteDir
-> Remote disk, portable SFTP client made to look and behave like normal directory.
+> Remote disk, portable SFTP client made to look and behaves like normal directory.
 > Download latest executable from [_here_](https://www.remotedir.eu/remotedir.exe)
 > or create it on your own. 
 
@@ -16,7 +16,7 @@
 
 
 ## General Information
-- The purpose of this project was to learn basics of Python and Kivy by creating an useful application.
+- The purpose of this project was to learn basics of Python and Kivy by creating a useful application.
 
 
 
@@ -68,9 +68,9 @@ Project is: _in progress
 ## Acknowledgements
 - This project was based mostly on Corey Schafer [tutorials](https://www.youtube.com/user/schafer5).
 - Many thanks to:
-  Corey Schafer for amazing youtube channel,
-  Martin Prikryl for sharing his knowledge on StackOverflow,
-  Many others whos 
+- Corey Schafer for amazing youtube channel,
+- Martin Prikryl for sharing his knowledge on StackOverflow,
+
 
 
 
