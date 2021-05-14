@@ -12,7 +12,7 @@
 * [Project Status](#project-status)
 * [Acknowledgements](#acknowledgements)
 * [Contact](#contact)
-<!-- * [License](#license) -->
+
 
 
 ## General Information
@@ -83,4 +83,4 @@ Created by [RemoteDir](https://www.remotedir.eu/) - feel free to contact me at s
 
 <!-- Optional -->
 <!-- ## License -->
-<!-- This project is open source and available under the [... License](). -->
+<!-- This project is open source and available under the MIT License. -->
