@@ -35,6 +35,7 @@ Ready features here:
 
 ## Screenshots
 ![Example screenshot](https://www.remotedir.eu/RemoteDir_screen.png)
+![Example screenshot](https://www.remotedir.eu/RemoteDir_transfers_screen.png)
 
 
 ## Dependencies
@@ -43,7 +44,7 @@ You will find requirements.txt in the project files.
 
 ## Usage
 Just create VirtualEnv, install requirements from requirements.txt and pull the project. 
-It is ment to be portable so everything should work without any additional actions. 
+It is meant to be portable so everything should work without any additional actions. 
 You can create executable on your own or download latest version from https://www.remotedir.eu/RemoteDir.exe. 
 
 

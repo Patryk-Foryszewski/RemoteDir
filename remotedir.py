@@ -673,7 +673,6 @@ class RemoteDir(BoxLayout):
         """
         Unlocks mouse when popup is dismissed
         """
-        logger.info('POPUP DISMISS')
         self.files_space.bind_external_drop('on_popup_dismiss')
         self.mouse_locked = False
 

@@ -33,7 +33,7 @@ class Upload(Thread):
     def run(self):
         self.bar.my_thread = self
         logger.info(f'Uploading file - {self.file_name}')
-        self.bar.set_values(f'Uploading {self.src_path} to {self.dst_path}')
+        self.bar.set_values(f'Uploading {self.file_name} to {self.dst_path}')
 
         try:
             if not self.sftp.exists(self.dst_path):
