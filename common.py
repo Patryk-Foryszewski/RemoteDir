@@ -255,15 +255,15 @@ def thumbnail_popup(originator, destination, _filename, sftp, on_popup, on_popup
     from kivy.clock import Clock
 
     def open_popup(_):
-        content = ThumbnailPopup(originator, destination, _filename, sftp)
+        content = ThumbnailPopup(originator, destination, _filename, sftp, on_popup)
         popup = Popup(
             title=f'Drop thumbnail for {_filename}',
             auto_dismiss=True,
+            on_popup=on_popup,
             content=content,
             size_hint=(0.7, 0.7))
         content.popup = popup
         popup.bind(on_dismiss=on_popup_dismiss)
-        on_popup()
         popup.open()
 
     Clock.schedule_once(open_popup, .1)

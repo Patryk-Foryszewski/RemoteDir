@@ -496,7 +496,7 @@ class FilesSpace(StackLayout):
     def open_file(self, file):
         self.originator.open_file(file)
 
-    def on_popup(self):
+    def on_popup(self, *_):
         self.originator.on_popup()
 
     def on_popup_dismiss(self, *_):
