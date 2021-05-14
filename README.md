@@ -34,8 +34,8 @@ Ready features here:
 
 
 ## Screenshots
-![Example screenshot](https://www.remotedir.eu/RemoteDir_screen.png)
-![Example screenshot](https://www.remotedir.eu/RemoteDir_transfers_screen.png)
+![Example screenshot](https://www.remotedir.eu/RemoteDir_screen.png?)
+![Example screenshot](https://www.remotedir.eu/RemoteDir_transfers_screen.png?)
 
 
 ## Dependencies
