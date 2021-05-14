@@ -69,7 +69,7 @@ Project is: _in progress
 - This project was based mostly on Corey Schafer [tutorials](https://www.youtube.com/user/schafer5).
 - Many thanks to:
 - Corey Schafer for amazing youtube channel,
-- Martin Prikryl for sharing his overwhelming knowledge on StackOverflow,
+- Martin Prikryl for sharing his overwhelming knowledge about paramiko library on StackOverflow,
 
 
 
