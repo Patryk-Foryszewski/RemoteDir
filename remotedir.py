@@ -193,25 +193,29 @@ class RemoteDir(BoxLayout):
     def list_dir(self, attrs_list=None):
         """
         Lists files of current working directory if attrs_list is not given. If so it fills
-        file space with given attrs_lists. Attrs_list comes from functions sorting functions
+        file space with given attrs_lists. If attrs_list comes from sorting functions
         so there is no need to list remote directory again.
         :param attrs_list:
         :return:
         """
 
-        self.compare_thumbs()
         if not attrs_list:
             try:
                 attrs_list = self.sftp.listdir_attr()
             except OSError as ose:
+                ex_log(f'List dir exception {ose}')
                 if ose == 'Socket is closed':
                     self.callback = self.list_dir
                     self.connect()
+                return
             except Exception as ex:
                 ex_log(f'List dir exception {ex}')
                 return
             else:
                 self.add_attrs(attrs_list)
+        else:
+            self.compare_thumbs()
+
         self.files_space.fill(attrs_list)
 
     def add_attrs(self, attrs):
